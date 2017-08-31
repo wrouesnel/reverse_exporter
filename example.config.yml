@@ -1,0 +1,5 @@
+reverse_exporters:
+- address: http://127.0.0.1:9090/metrics
+  name: prometheus
+- address: http://127.0.0.1:9100/metrics
+  name: node_exporter

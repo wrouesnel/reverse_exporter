@@ -1,0 +1,12 @@
+html
+    head
+        meta[name="description"][content="callback-ui"]
+        meta[name="viewport"][content="width=device-width"]
+        script
+            var contextPath = #{ContextPath};
+
+        link[rel="stylesheet"][type="text/css"][href=ContextPath + "/static/main.css"]
+
+    body
+        div#app
+        script[type="text/javascript"][src=ContextPath + "/static/main.js"]

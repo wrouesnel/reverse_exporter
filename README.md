@@ -1,0 +1,16 @@
+
+# Reverse Prometheus Exporter
+
+Logical-decoding Promethus Metric Reverse Proxy
+
+## Purpose
+
+This exporter is designed for appliance-like container environments where multiple Prometheus
+exporters should be presented as a single "instance" to a Prometheus server.
+
+The reverse_exporter logically decodes its target exporters on each scrape, allowing them to be 
+presented as unique metrics to Prometheus. It appends a new field (enforced to be unique) of `exporter_name`
+to each metric so name-colliding metrics from internal exporters can be differeniated (i.e. since most Prometheus
+exporters export their own process information as a part of their metrics).
+
+tl;dr It's how you get `/metrics` to work with a fat container.
