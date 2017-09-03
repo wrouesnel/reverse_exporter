@@ -1,25 +1,27 @@
 package metricProxy
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"sort"
+	"strings"
+	"sync"
 	"time"
 
+	"github.com/golang/protobuf/proto"
+	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/common/model"
-	"golang.org/x/net/context/ctxhttp"
-
-	dto "github.com/prometheus/client_model/go"
 	"github.com/wrouesnel/go.log"
-	"github.com/golang/protobuf/proto"
-	"bytes"
-	"strings"
-	"compress/gzip"
-	"sync"
-	"sort"
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/wrouesnel/reverse_exporter/version"
+	"golang.org/x/net/context/ctxhttp"
 )
 
 const (
@@ -33,34 +35,46 @@ const acceptHeader = `application/vnd.google.protobuf;proto=io.prometheus.client
 
 const reverseProxyNameLabel = "exporter_name"
 
-// FIXME - pass the real version from somewhere
-var userAgentHeader = fmt.Sprintf("Prometheus Reverse Exporter/%s", "dev")
+var userAgentHeader = fmt.Sprintf("Prometheus Reverse Exporter/%s", version.Version)
 
 var bufPool sync.Pool
 
-type MetricReverseProxy struct {
-	address string
-	deadline time.Duration
-	labels model.LabelSet
+type MetricProxy interface {
+	Scrape(ctx context.Context, values url.Values)
+	Name() string
 }
 
-// NewMetricReverseProxy initializes a MetricProxy and configures it to rewrite with the given name
-func NewMetricReverseProxy(deadline time.Duration, address string, name string) *MetricReverseProxy {
+type MetricReverseProxy struct {
+	address  string
+	deadline time.Duration
+	labels   model.LabelSet
+}
+
+// NewMetricReverseProxy initializes a networked metric proxy
+func NewMetricReverseProxy(deadline time.Duration, address string, name string, addnlabels map[string]string) (MetricProxy, error) {
 	labels := make(model.LabelSet)
 	labels[reverseProxyNameLabel] = model.LabelValue(name)
 
-	return &MetricReverseProxy{
-		address: address,
-		deadline: deadline,
-		labels: labels,
+	for k, v := range addnlabels {
+		if k == reverseProxyNameLabel {
+			return nil, errors.New("cannot override name field with additional labels")
+		}
+		labels[model.LabelName(k)] = model.LabelValue(v)
 	}
+
+	return MetricProxy(&MetricReverseProxy{
+		address:  address,
+		deadline: deadline,
+		labels:   labels,
+	}), nil
 }
 
-func (mrp *MetricReverseProxy) Scrape(ctx context.Context) ([]*dto.MetricFamily, error) {
-	// get metrics
-	//ctx, _ = context.WithCancel(ctx)
-	ctx = context.Background()
-	mfs, err := scrape(ctx, mrp.deadline, mrp.address)
+// Scrape scrapes the underlying metric endpoint. values are URL parameters
+// to be used with the request if needed.
+func (mrp *MetricReverseProxy) Scrape(ctx context.Context, values url.Values) ([]*dto.MetricFamily, error) {
+	// Derive a new context from the request
+	childCtx, _ := context.WithCancel(ctx)
+	mfs, err := scrape(childCtx, mrp.deadline, mrp.address)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +150,7 @@ func rewriteMetrics(labels model.LabelSet, mfs []*dto.MetricFamily) {
 			for n, v := range outputSet {
 				outputPairs = append(outputPairs, &dto.LabelPair{
 					// Note: could probably drop the function call and just pass a pointer
-					Name: proto.String(string(n)),
+					Name:  proto.String(string(n)),
 					Value: proto.String(string(v)),
 				})
 			}

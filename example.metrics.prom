@@ -1,0 +1,3 @@
+# HELP constant_file_metric This is a sample metric which is a constant
+# TYPE constant_file_metric gauge
+constant_file_metric 100

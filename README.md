@@ -14,3 +14,15 @@ to each metric so name-colliding metrics from internal exporters can be differen
 exporters export their own process information as a part of their metrics).
 
 tl;dr It's how you get `/metrics` to work with a fat container.
+
+## Usage
+
+See `example.config.yml` for a config file including all parameters used in
+some way.
+
+The included `example.htpasswd` file includes users `reverse_exporter` and
+`reverse_exporter2` with passwords matching usernames.
+
+Together these files will setup an example environment when used with
+docker-compose. `docker-compose up` will setup the environment, with port `9998`
+bound to `127.0.0.1:9998` on the host.
