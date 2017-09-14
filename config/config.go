@@ -54,7 +54,7 @@ type ReverseExporter struct {
 	Path string `yaml:"path"`
 	// Exporters is a list of URLs defining exporter endpoints to be aggregated
 	// and the unique name to be given to differentiate their metrics.
-	Exporters []Exporter `yaml:"exporters"`
+	Exporters []interface{} `yaml:"exporters"`
 	// AuthType is the type of authentication backend to use for this reverse
 	// proxy. Currently only nothing and "basic" are supported.
 	AuthType AuthType	`yaml:"auth_type"`
@@ -66,19 +66,39 @@ type ReverseExporter struct {
 type Exporter struct {
 	// Name is the
 	Name string `yaml:"name"`
+
+}
+
+// FileExporterConfig contains configuration specific to reverse proxying files
+type FileExporterConfig struct {
+	Path string `yaml:"path"`
+	Exporter
+}
+
+// ExecExporterConfig contains configuration specific to reverse proxying executable scripts
+type ExecExporterConfig struct {
+	Command string `yaml:"command"`
+	Args []string `yaml:"args"`
+	Exporter
+}
+
+// ExecCachingExporterConfig contains configuration specific to reverse proxying cached executable scripts
+type ExecCachingExporterConfig struct {
+	ExecInterval Duration	`yaml:"exec_interval"`
+	ExecExporterConfig
+}
+
+// HttpExporterConfig contains configuration specific to reverse proxying normal http-based Prometheus exporters
+type HttpExporterConfig struct {
 	// A URI giving the address the exporter is found at.
 	// HTTP: http://localhost/metrics
 	// Unix: http://unix:/path/to/socket:/metrics
-	// File: file:///var/lib/file_metrics.prom
-	// Exec: exec:///usr/local/bin/exporter_script
 	Address string `yaml:"address"`
-	// Deadline is the maximum length of time connecting to and retrieving the
+	// Timeout is the maximum length of time connecting to and retrieving the
 	// results of this exporter can take.
-	Deadline Duration          `yaml:"proxy_timeout"`
-	// Labels is a static set of additional metric labels to add during metric
-	// rewriting. It can not be used to supercede the name label.
-	Labels   map[string]string `yaml:"labels"`
+	Timeout Duration `yaml:"timeout"`
 	// ForwardUrlParams determines whether the exporter will have ALL url params
 	// of the parent request added to it.
 	ForwardUrlParams bool	   `yaml:"forward_url_params"`
+	Exporter
 }

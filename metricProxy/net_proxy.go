@@ -39,10 +39,7 @@ var userAgentHeader = fmt.Sprintf("Prometheus Reverse Exporter/%s", version.Vers
 
 var bufPool sync.Pool
 
-type MetricProxy interface {
-	Scrape(ctx context.Context, values url.Values)
-	Name() string
-}
+
 
 type MetricReverseProxy struct {
 	address  string
@@ -89,8 +86,6 @@ func (mrp *MetricReverseProxy) Name() string {
 
 // scrape decodes MetricFamily's from the wire format, and returns them ready to be proxied.
 func scrape(ctx context.Context, deadline time.Duration, address string) ([]*dto.MetricFamily, error) {
-	log := log.With("address", address)
-
 	req, err := http.NewRequest("GET", address, nil)
 	if err != nil {
 		return nil, err
@@ -111,21 +106,7 @@ func scrape(ctx context.Context, deadline time.Duration, address string) ([]*dto
 		return nil, fmt.Errorf("server returned HTTP status %s", resp.Status)
 	}
 
-	mfDec := expfmt.NewDecoder(resp.Body, expfmt.ResponseFormat(resp.Header))
-
-	mfs := make([]*dto.MetricFamily, 0)
-
-	for {
-		mf := &dto.MetricFamily{}
-		if err := mfDec.Decode(mf); err != nil {
-			if err != io.EOF {
-				log.Errorln("Error while decoding metric family:", err)
-			}
-			break
-		}
-		mfs = append(mfs, mf)
-	}
-	log.Debugf("Retrieved %d metric families", len(mfs))
+	mfs, err := decodeMetrics(resp.Body, expfmt.ResponseFormat(resp.Header))
 	return mfs, err
 }
 

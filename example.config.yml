@@ -5,46 +5,57 @@ reversed_exporters:
 # exporters.
 - path: /metrics
   exporters:
-  - address: http://127.0.0.1:9090/metrics
-    name: prometheus
-    # proxy_timeout sets the TCP deadline for a request to complete. No data
-    # is returned by an endpoint until all exporters have received data, so keep
-    # this low (or preferably: don't use network endpoints).
-    # a value of 0 means no timeout (the request can potentially stall until the
-    # client terminates, which Prometheus will do by default).
-    proxy_timeout: 1s
-  - address: http://127.0.0.1:9100/metrics
-    name: node_exporter
-    auth_type: basic
-    htpasswd_file: passwords.htpasswd
-    # labels is a map of additional static labels to add (in addition to the
-    # enforced "name" field)
-    labels:
-      node_uuid: some.special.identifier
+  - http:
+      name: prometheus
+      address: http://127.0.0.1:9090/metrics
+      # proxy_timeout sets the TCP deadline for a request to complete. No data
+      # is returned by an endpoint until all exporters have received data, so keep
+      # this low (or preferably: don't use network endpoints).
+      # a value of 0 means no timeout (the request can potentially stall until the
+      # client terminates, which Prometheus will do by default).
+      timeout: 1s
+    - address: http://127.0.0.1:9100/metrics
+      name: node_exporter
+      auth_type: basic
+      htpasswd_file: passwords.htpasswd
+      # labels is a map of additional static labels to add (in addition to the
+      # enforced "name" field)
+      labels:
+        node_uuid: some.special.identifier
 
 - path: /blackbox
   exporters:
-  - address: http://127.0.0.1:9115/probe
-    name: blackbox_exporter
-    # disable appending the name (above) to the exporter. Important: if you end
-    # up combining multiple metrics with undistinguished names, the endpoint
-    # will disable itself.
-    no_rewrite: true
+  - http:
+      name: blackbox_exporter
+      address: http://127.0.0.1:9115/probe
+      # disable appending the name (above) to the exporter. Important: if you end
+      # up combining multiple metrics with undistinguished names, the endpoint
+      # will disable itself.
+      no_rewrite: true
 
 # metrics from jobs inside a container can be easily included provided they are
 # in the text exposition format. Just path a file URI as the address.
 - path: /file-endpoint
   exporters:
-  - address: file://example.metrics.prom
-    name: cron_metrics
+  - file:
+      name: cron_metrics
+      path: file://example.metrics.prom
 
-# an executable script can also be passed with a special `exec` URL. Be careful
-# with this mode as it's generally ill-advised - you would usually be better off
-# adding a new exporter and reverse proxying it normally. It's useful for
-# quickly getting up and running in an environment where you're using TLS mutual
-# authentication to limit scrapers.
+
+# an executable script can also be passed with a special `exec` URL. exec proxy's have two modes:
+# in non-caching mode, the proxy runs an instance of the script as soon as a request is received,
+# and buffers up additional requests - returning the result data to all of them once execution is
+# finished. Only a single instance is ever executing.
+# In caching mode, the command is executed continuously with a given timeout, and cached results
+# are served to Prometheus instances. Your script should probably include a timestamp in this mode.
 - path: /dynamic_endpoint
   exporters:
-  - address: exec://scripted_metrics.sh
-    name: dynamic_metrics
-
+  - exec:
+      name: dynamic_metrics
+      command: /scripted_metrics.sh
+      args: ["arg1", "arg2"]
+  - exec-cached:
+      name: periodic_dynamic_metrics
+      command: /periodic_dynamic_metrics.sh
+      args: []
+      exec_interval: 30s
