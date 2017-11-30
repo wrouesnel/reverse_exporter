@@ -155,7 +155,7 @@ func newExecCachingProxy(config *config.ExecCachingExporterConfig) *execCachingP
 		lastResultMtx: &sync.RWMutex{},
 	}
 
-	go newProxy.execer()
+	go newProxy.execer(rdyCh)
 
 	return &newProxy
 }
