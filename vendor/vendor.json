@@ -159,6 +159,12 @@
 			"revisionTime": "2017-11-29T19:21:16Z"
 		},
 		{
+			"checksumSHA1": "SIhhNXud9FKua0s3WlGPRRkDKRg=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "13fcbd661c8ececa8807a29b48407d674b1d8ed8",
+			"revisionTime": "2017-11-29T08:33:14Z"
+		},
+		{
 			"checksumSHA1": "fRgp9UZPllOlkPssv7frzQx4z9A=",
 			"path": "gopkg.in/yaml.v2",
 			"revision": "287cf08546ab5e7e37d55a84f7ed3fd1db036de5",
