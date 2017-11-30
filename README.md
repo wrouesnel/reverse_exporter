@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/wrouesnel/reverse_exporter.svg?branch=master)](https://travis-ci.org/wrouesnel/reverse_exporter)
+[![Coverage Status](https://coveralls.io/repos/github/wrouesnel/reverse_exporter/badge.svg?branch=master)](https://coveralls.io/github/wrouesnel/reverse_exporter?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/wrouesnel/reverse_exporter)](https://goreportcard.com/report/github.com/wrouesnel/reverse_exporter)
 
 # Reverse Prometheus Exporter
 
