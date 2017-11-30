@@ -14,7 +14,6 @@ import (
 	"io"
 	"bytes"
 	"compress/gzip"
-	"errors"
 )
 
 var (
@@ -28,9 +27,12 @@ type MetricProxy interface {
 	Scrape(ctx context.Context, values url.Values) ([]*dto.MetricFamily, error)
 }
 
-// ReverseProxyEndpoint wraps a collection of MetricProxy's and handles rewriting their labels to convert them into
-// a consistent metric interface.
+
+
+// ReverseProxyEndpoint wraps a collection of ReverseProxyBackends. It exposes an HTTP endpoint
+// able to be passed to the user and handles routing and authentication.
 type ReverseProxyEndpoint struct {
+	backends []MetricProxy
 }
 
 // NewMetricReverseProxy initializes a new reverse proxy from the given configuration.
