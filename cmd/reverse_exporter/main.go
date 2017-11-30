@@ -111,7 +111,7 @@ func main() {
 	log.Infoln("Starting web interface")
 	listenAddrs := strings.Split(appConfig.ListenAddrs, ",")
 
-	listeners, err := multihttp.Listen(listenAddrs, router)
+	listeners, listenerErrs, err := multihttp.Listen(listenAddrs, router)
 	defer func() {
 		for _, l := range listeners {
 			if cerr := l.Close(); cerr != nil {
@@ -126,12 +126,25 @@ func main() {
 		log.Infoln("Listening on", addr)
 	}
 
+	// Setup handlers to catch the listener termination statuses.
+	go func() {
+		for listenerErr := range listenerErrs {
+			log.Errorln("Listener Error:", listenerErr.Error)
+		}
+	}()
+
 	// Setup signal wait for shutdown
 	shutdownCh := make(chan os.Signal, 1)
 	signal.Notify(shutdownCh, syscall.SIGINT, syscall.SIGTERM)
 
-	sig := <-shutdownCh
-	log.Infoln("Terminating on signal:", sig)
+	// If a listener fails while it's listening, we'd like to panic and shutdown
+	// since it shouldn't really happen.
+	select {
+	case sig := <-shutdownCh:
+		log.Infoln("Terminating on signal:", sig)
+	case listenerErr := <- listenerErrs:
+		log.Errorln("Terminating due to listener shutdown:", listenerErr.Error)
+	}
 }
 
 // reverseProxy returns a function which handles calling and combining multiple
