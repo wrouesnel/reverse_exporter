@@ -1,9 +1,9 @@
 package metricProxy
 
 import (
-	"io"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
+	"io"
 )
 
 // decodeMetrics decodes metrics from an io.Reader. Returns an empty slice on error.

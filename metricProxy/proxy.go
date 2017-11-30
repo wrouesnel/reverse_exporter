@@ -1,17 +1,17 @@
 package metricProxy
 
 import (
-	dto "github.com/prometheus/client_model/go"
-	"github.com/wrouesnel/reverse_exporter/config"
-	"github.com/prometheus/common/model"
-	"errors"
-	"net/url"
 	"context"
+	"errors"
+	dto "github.com/prometheus/client_model/go"
+	"github.com/prometheus/common/model"
+	"github.com/wrouesnel/reverse_exporter/config"
+	"net/url"
 )
 
 var (
 	ErrNameFieldOverrideAttempted = errors.New("cannot override name field with additional labels")
-	ErrFileProxyScrapeError = errors.New("file proxy file read failed")
+	ErrFileProxyScrapeError       = errors.New("file proxy file read failed")
 )
 
 // MetricProxy presents an interface which allows a context-cancellable scrape of a backend proxy
@@ -23,12 +23,10 @@ type MetricProxy interface {
 // ReverseProxyEndpoint wraps a collection of MetricProxy's and handles rewriting their labels to convert them into
 // a consistent metric interface.
 type ReverseProxyEndpoint struct {
-
 }
 
 // NewMetricReverseProxy initializes a new reverse proxy from the given configuration.
 func NewMetricReverseProxy(exporter config.ReverseExporter) (MetricProxy, error) {
-
 
 	labels := make(model.LabelSet)
 	labels[reverseProxyNameLabel] = model.LabelValue(name)

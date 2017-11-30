@@ -18,18 +18,18 @@ import (
 	"net/http"
 
 	dto "github.com/prometheus/client_model/go"
-	"time"
 	"sync"
+	"time"
 
-	auth "github.com/abbot/go-http-auth"
 	"fmt"
+	auth "github.com/abbot/go-http-auth"
 	"github.com/wrouesnel/reverse_exporter/version"
 
 	"errors"
 )
 
 type AppConfig struct {
-	ConfigFile  string
+	ConfigFile string
 	//MetricsPath string
 
 	ContextPath string
@@ -102,7 +102,7 @@ func main() {
 			log.Fatalln("Error initializing reverse proxy for path:", rp.Path)
 		}
 
-		router.HandlerFunc("GET",rp.Path, proxyHandler)
+		router.HandlerFunc("GET", rp.Path, proxyHandler)
 
 		// future: store a reference to the actual handler when its an object
 		initializedPaths[rp.Path] = nil
@@ -174,7 +174,7 @@ func reverseProxy(rp config.ReverseExporter) (http.HandlerFunc, error) {
 				mfs, err := rp.Scrape(req.Context(), req.URL.Query())
 				if err != nil {
 					log.Errorln("error while proxying metric:", err)
-					return	// emit nothing to the metric channel
+					return // emit nothing to the metric channel
 				}
 				mfsCh <- mfs // emit the metric families to the aggregator
 			}()
@@ -196,7 +196,7 @@ func reverseProxy(rp config.ReverseExporter) (http.HandlerFunc, error) {
 		wg.Wait()
 		close(mfsCh)
 		// collect results from mfsResultCh
-		allMfs := <- mfsResultCh
+		allMfs := <-mfsResultCh
 
 		// serialize the resultant families
 		metricProxy.HandleSerializeMetrics(wr, req, allMfs)

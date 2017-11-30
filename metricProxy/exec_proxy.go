@@ -85,7 +85,7 @@ func (ep *execProxy) execer(reqCh <-chan struct{}) {
 
 		// Emit metrics to all waiting scrapes
 		ep.waitingMtx.Lock()
-		for ch, _ := range ep.waitingScrapes {
+		for ch := range ep.waitingScrapes {
 			ch <- mfs
 		}
 		// Replace the scrape map since all scrapes are now satisfied.
@@ -136,8 +136,8 @@ type execCachingProxy struct {
 	arguments    []string
 	execInterval time.Duration
 
-	lastExec   time.Time
-	lastResult []*dto.MetricFamily
+	lastExec      time.Time
+	lastResult    []*dto.MetricFamily
 	resultReadyCh <-chan struct{}
 	lastResultMtx *sync.RWMutex
 }
@@ -147,12 +147,12 @@ func newExecCachingProxy(config *config.ExecCachingExporterConfig) *execCachingP
 	rdyCh := make(chan struct{})
 
 	newProxy := execCachingProxy{
-		commandPath:    config.Command,
-		arguments:      config.Args,
+		commandPath: config.Command,
+		arguments:   config.Args,
 
-		lastResult: 	make([]*dto.MetricFamily, 0),
-		resultReadyCh:  rdyCh,
-		lastResultMtx:  &sync.RWMutex{},
+		lastResult:    make([]*dto.MetricFamily, 0),
+		resultReadyCh: rdyCh,
+		lastResultMtx: &sync.RWMutex{},
 	}
 
 	go newProxy.execer()
@@ -165,7 +165,7 @@ func (ecp *execCachingProxy) execer(rdyCh chan<- struct{}) {
 
 	for {
 		nextExec := ecp.lastExec.Add(ecp.execInterval)
-		<- time.After(nextExec.Sub(time.Now()))
+		<-time.After(nextExec.Sub(time.Now()))
 
 		ecp.lastExec = time.Now()
 		cmd := exec.Command(ecp.commandPath, ecp.arguments...)
@@ -222,7 +222,6 @@ func (ecp *execCachingProxy) Scrape(ctx context.Context, values url.Values) ([]*
 	ecp.lastResultMtx.RLock()
 	retMetrics = ecp.lastResult
 	ecp.lastResultMtx.RUnlock()
-
 
 	return retMetrics, rerr
 }

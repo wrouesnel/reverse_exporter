@@ -39,8 +39,6 @@ var userAgentHeader = fmt.Sprintf("Prometheus Reverse Exporter/%s", version.Vers
 
 var bufPool sync.Pool
 
-
-
 type MetricReverseProxy struct {
 	address  string
 	deadline time.Duration

@@ -40,9 +40,10 @@ func Save(cfg *ExporterConfig) ([]byte, error) {
 type AuthType string
 
 const (
-	AuthTypeNone AuthType = ""
+	AuthTypeNone  AuthType = ""
 	AuthTypeBasic AuthType = "basic"
 )
+
 // ExporterConfig is the global configuration.
 type ExporterConfig struct {
 	ReversedExporters []ReverseExporter `yaml:"reverse_exporters"`
@@ -57,7 +58,7 @@ type ReverseExporter struct {
 	Exporters []interface{} `yaml:"exporters"`
 	// AuthType is the type of authentication backend to use for this reverse
 	// proxy. Currently only nothing and "basic" are supported.
-	AuthType AuthType	`yaml:"auth_type"`
+	AuthType AuthType `yaml:"auth_type"`
 	// HtPasswdFile is the HtPasswd file to use for basic auth if basic auth is
 	// requested.
 	HtPasswdFile string `yaml:"htpasswd_file"`
@@ -66,7 +67,6 @@ type ReverseExporter struct {
 type Exporter struct {
 	// Name is the
 	Name string `yaml:"name"`
-
 }
 
 // FileExporterConfig contains configuration specific to reverse proxying files
@@ -77,14 +77,14 @@ type FileExporterConfig struct {
 
 // ExecExporterConfig contains configuration specific to reverse proxying executable scripts
 type ExecExporterConfig struct {
-	Command string `yaml:"command"`
-	Args []string `yaml:"args"`
+	Command string   `yaml:"command"`
+	Args    []string `yaml:"args"`
 	Exporter
 }
 
 // ExecCachingExporterConfig contains configuration specific to reverse proxying cached executable scripts
 type ExecCachingExporterConfig struct {
-	ExecInterval Duration	`yaml:"exec_interval"`
+	ExecInterval Duration `yaml:"exec_interval"`
 	ExecExporterConfig
 }
 
@@ -99,6 +99,6 @@ type HttpExporterConfig struct {
 	Timeout Duration `yaml:"timeout"`
 	// ForwardUrlParams determines whether the exporter will have ALL url params
 	// of the parent request added to it.
-	ForwardUrlParams bool	   `yaml:"forward_url_params"`
+	ForwardUrlParams bool `yaml:"forward_url_params"`
 	Exporter
 }
