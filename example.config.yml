@@ -4,6 +4,9 @@ reversed_exporters:
 # /metrics endpoint for appliance-like environments which may contain multiple
 # exporters.
 - path: /metrics
+  # auth_type configures password protection on the endpoint
+  auth_type: basic
+  htpasswd_file: passwords.htpasswd
   exporters:
   - http:
       name: prometheus
@@ -16,8 +19,6 @@ reversed_exporters:
       timeout: 1s
     - address: http://127.0.0.1:9100/metrics
       name: node_exporter
-      auth_type: basic
-      htpasswd_file: passwords.htpasswd
       # labels is a map of additional static labels to add (in addition to the
       # enforced "name" field)
       labels:
