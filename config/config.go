@@ -65,8 +65,12 @@ type ReverseExporter struct {
 }
 
 type Exporter struct {
-	// Name is the
+	// Name is the name of the underlying exporter which will be appended to the metrics
 	Name string `yaml:"name"`
+	// NoRewrite disables appending of the name (explicit labels will be appended however)
+	NoRewrite bool `yaml:"no_rewrite"`
+	// Labels are additional key-value labels which should be statically added to all metrics
+	Labels map[string]string `yaml:"labels"`
 }
 
 // FileExporterConfig contains configuration specific to reverse proxying files

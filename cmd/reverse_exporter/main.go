@@ -1,31 +1,22 @@
 package main
 
 import (
-	"flag"
-	"net/url"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/wrouesnel/go.log"
+	"github.com/prometheus/common/log"
 	"github.com/wrouesnel/multihttp"
+
+	"github.com/wrouesnel/reverse_exporter/api"
 	"github.com/wrouesnel/reverse_exporter/api/apisettings"
-	"github.com/wrouesnel/reverse_exporter/assets"
 	"github.com/wrouesnel/reverse_exporter/config"
 	"github.com/wrouesnel/reverse_exporter/metricProxy"
-	"net/http"
-
-	dto "github.com/prometheus/client_model/go"
-	"sync"
-	"time"
-
-	"fmt"
-	auth "github.com/abbot/go-http-auth"
 	"github.com/wrouesnel/reverse_exporter/version"
-
-	"errors"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 type AppConfig struct {
@@ -40,75 +31,51 @@ type AppConfig struct {
 	PrintVersion bool
 }
 
-func main() {
-	appConfig := AppConfig{}
-
-	flag.StringVar(&appConfig.ConfigFile, "config.file", "reverse_exporter.yml", "Path to configuration file")
-	//flag.StringVar(&appConfig.MetricsPath, "metrics.path", "/metrics", "URL path to expose metrics under")
-
-	flag.StringVar(&appConfig.ContextPath, "http.context-path", "", "Context-path of any additional reverse proxy")
-	flag.StringVar(&appConfig.StaticProxy, "http.static-proxy", "", "Static Assets proxy server path")
-
-	flag.StringVar(&appConfig.ListenAddrs, "http.listen-addrs", "tcp://0.0.0.0:9998", "Comma-separated list of listen addresses")
-
-	flag.BoolVar(&appConfig.PrintVersion, "version", false, "Print version and exit.")
-
-	// TODO: basic auth, SSL client/server support
-
-	flag.Parse()
-
-	// Print version and exit.
-	if appConfig.PrintVersion {
-		fmt.Println(version.Version)
-		os.Exit(0)
-	}
-
+func realMain(appConfig AppConfig) int {
 	apiConfig := apisettings.APISettings{}
 	apiConfig.ContextPath = appConfig.ContextPath
 
-	if appConfig.StaticProxy != "" {
-		staticProxyUrl, err := url.Parse(appConfig.StaticProxy)
-		if err != nil {
-			log.Fatalln("Could not parse http.static-proxy URL:", err)
-		}
-		apiConfig.StaticProxy = staticProxyUrl
-	}
-
 	if appConfig.ConfigFile == "" {
-		log.Fatalln("No app config specified.")
+		log.Errorln("No app config specified.")
+		return 1
 	}
 
 	reverseConfig, err := config.LoadFromFile(appConfig.ConfigFile)
 	if err != nil {
-		log.Fatalln("Could not parse configuration file:", err)
+		log.Errorln("Could not parse configuration file:", err)
+		return 1
 	}
 
 	// Setup the web UI
 	router := httprouter.New()
-	assets.StaticFiles(apiConfig, router)
+	router = api.NewAPI_v1(apiConfig, router)
 
-	initializedPaths := make(map[string]interface{})
+	log.Debugln("Initializing reverse proxy backends")
+	initializedPaths := make(map[string]http.Handler)
 	for _, rp := range reverseConfig.ReversedExporters {
 		if rp.Path == "" {
-			log.Fatalln("Blank exporter paths are not allowed.")
+			log.Errorln("Blank exporter paths are not allowed.")
+			return 1
 		}
 
 		if _, found := initializedPaths[rp.Path]; found {
-			log.Fatalf("Exporter paths must be unique. %s already exists.", rp.Path)
+			log.Errorln("Exporter paths must be unique. %s already exists.", rp.Path)
+			return 1
 		}
 
-		proxyHandler, perr := reverseProxy(rp)
+		proxyHandler, perr := metricProxy.NewMetricReverseProxy(rp)
 		if perr != nil {
-			log.Fatalln("Error initializing reverse proxy for path:", rp.Path)
+			log.Errorln("Error initializing reverse proxy for path:", rp.Path)
+			return 1
 		}
 
-		router.HandlerFunc("GET", rp.Path, proxyHandler)
+		router.Handler("GET", apiConfig.WrapPath(rp.Path), proxyHandler)
 
-		// future: store a reference to the actual handler when its an object
-		initializedPaths[rp.Path] = nil
+		initializedPaths[rp.Path] = proxyHandler
 	}
+	log.Debugln("Finished initializing reverse proxy backends")
 
-	log.Infoln("Starting web interface")
+	log.Infoln("Starting HTTP server")
 	listenAddrs := strings.Split(appConfig.ListenAddrs, ",")
 
 	listeners, listenerErrs, err := multihttp.Listen(listenAddrs, router)
@@ -120,7 +87,8 @@ func main() {
 		}
 	}()
 	if err != nil {
-		log.Panicln("Startup failed for a listener:", err)
+		log.Errorln("Startup failed for a listener:", err)
+		return 1
 	}
 	for _, addr := range listenAddrs {
 		log.Infoln("Listening on", addr)
@@ -142,95 +110,26 @@ func main() {
 	select {
 	case sig := <-shutdownCh:
 		log.Infoln("Terminating on signal:", sig)
-	case listenerErr := <- listenerErrs:
+		return 0
+	case listenerErr := <-listenerErrs:
 		log.Errorln("Terminating due to listener shutdown:", listenerErr.Error)
+		return 1
 	}
 }
 
-// reverseProxy returns a function which handles calling and combining multiple
-// exporters in parallel. Returns an error if the configuration is invalid.
-func reverseProxy(rp config.ReverseExporter) (http.HandlerFunc, error) {
-	// Setup reverse proxy instances for this endpoint
-	// Setup metric reverse proxies
-	log := log.With("path", rp.Path)
+func main() {
+	appConfig := AppConfig{}
 
-	reverseProxies := make([]*metricProxy.MetricReverseProxy, 0)
-	initializedNames := make(map[string]interface{})
-	for _, ep := range rp.Exporters {
-		if _, found := initializedNames[ep.Name]; found {
-			log.Errorln("Exporter names must be unique within an endpoint:", ep.Name)
-			return nil, errors.New("duplicate exporter name found")
-		}
-		log.Debugln("Initializing reverse proxy for:", ep.Name, ep.Address)
-		newProxy, merr := metricProxy.NewMetricReverseProxy(time.Duration(ep.Deadline), ep.Address, ep.Name, ep.Labels)
-		if merr != nil {
-			log.Errorln("Error initializing metric proxy:", merr)
-			return nil, errors.New("Error initializing reverse proxy")
-		}
-		reverseProxies = append(reverseProxies, newProxy)
-	}
+	app := kingpin.New("reverse_exporter", "Logical-decoding Prometheus exporter reverse proxy")
 
-	// Setup the proxy endpoint handler function.
-	proxyHandler := http.HandlerFunc(func(wr http.ResponseWriter, req *http.Request) {
-		// As an appliance, we return nothing till we know the result of our reverse proxied metrics.
-		wg := new(sync.WaitGroup)
-		// This channel is guarded by wg - it will be closed when the waitgroup
-		// finishes.
-		mfsCh := make(chan []*dto.MetricFamily)
-		mfsResultCh := make(chan []*dto.MetricFamily)
+	app.Flag("config.file", "Path to the configuration file").Default("reverse_exporter.yml").StringVar(&appConfig.ConfigFile)
+	app.Flag("http.context-path", "Context-path to be globally applied to the configured proxies").StringVar(&appConfig.ContextPath)
+	app.Flag("http.listen-addrs","Comma-separated list of listen address configurations").Default("tcp://0.0.0.0:9998").StringVar(&appConfig.ListenAddrs)
+	app.Version(version.Version)
 
-		// On request, request all included exporters to return values.
-		for _, rp := range reverseProxies {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				mfs, err := rp.Scrape(req.Context(), req.URL.Query())
-				if err != nil {
-					log.Errorln("error while proxying metric:", err)
-					return // emit nothing to the metric channel
-				}
-				mfsCh <- mfs // emit the metric families to the aggregator
-			}()
-			log.Debugln("Scraping reverse exporter:", rp.Name())
-		}
+	log.AddFlags(app)
 
-		// metric aggregator emits result to mfsResultCh
-		go func() {
-			mfs := []*dto.MetricFamily{}
+	kingpin.MustParse(app.Parse(os.Args[1:]))
 
-			for inpMfs := range mfsCh {
-				mfs = append(mfs, inpMfs...)
-			}
-
-			mfsResultCh <- mfs
-			close(mfsResultCh)
-		}()
-		// Wait for all scrapers to return and results to aggregate
-		wg.Wait()
-		close(mfsCh)
-		// collect results from mfsResultCh
-		allMfs := <-mfsResultCh
-
-		// serialize the resultant families
-		metricProxy.handleSerializeMetrics(wr, req, allMfs)
-	})
-
-	// Add authentication to the handler
-	switch rp.AuthType {
-	case config.AuthTypeNone:
-		log.Debugln("No authentication for endpoint.")
-	case config.AuthTypeBasic:
-		log.Debugln("Adding basic authentication to proxy endpoint")
-		if rp.HtPasswdFile == "" {
-			return nil, errors.New("no htpasswd file specified for basic auth")
-		}
-		secretProvider := auth.HtpasswdFileProvider(rp.HtPasswdFile)
-		authenticator := auth.NewBasicAuthenticator("reverse_exporter", secretProvider)
-		proxyHandler = authenticator.Wrap(auth.AuthenticatedHandlerFunc(proxyHandler))
-	default:
-		log.Debugln("Invalid auth type:", rp.AuthType)
-		return nil, errors.New("invalid auth type")
-	}
-
-	return proxyHandler, nil
+	os.Exit(realMain(appConfig))
 }

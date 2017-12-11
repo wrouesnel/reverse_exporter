@@ -66,9 +66,6 @@ $(shell mkdir -p $(DIRS))
 export PATH := $(TOOLDIR)/bin:$(PATH)
 SHELL := env PATH=$(PATH) /bin/bash
 
-WEB_SRC_ASSETS := $(shell find node_modules -type f) $(shell find web -type f)
-WEB_BUILT_ASSETS := $(shell find assets/generated -type f) $(shell find assets/generated -type d)
-
 all: style lint test binary
 
 # binary target builds command binaries
@@ -79,7 +76,7 @@ $(GO_CMDS): $(CURRENT_PLATFORM_BINS)
 
 $(PLATFORM_BINS): $(GO_SRC)
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build -a \
-		-ldflags "-extldflags '-static' -X main.Version=$(VERSION)" \
+		-ldflags "-extldflags '-static' -X version.Version=$(VERSION)" \
 		-o $@ ./$(CMD_DIR)/$(shell basename $@)
 
 $(PLATFORM_DIRS): $(PLATFORM_BINS)

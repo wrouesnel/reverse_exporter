@@ -2,8 +2,8 @@ package metricProxy
 
 import (
 	dto "github.com/prometheus/client_model/go"
+	"github.com/prometheus/common/log"
 	"net/http"
-	"github.com/wrouesnel/go.log"
 	"sync"
 )
 
@@ -45,7 +45,7 @@ func (rpe *ReverseProxyEndpoint) serveMetricsHTTP(wr http.ResponseWriter, req *h
 			defer wg.Done()
 			mfs, err := backend.Scrape(ctx, req.URL.Query())
 			if err != nil {
-				log.WithError(err).Errorln("Error while scraping backend handler for endpoint")
+				log.With("error", err).Errorln("Error while scraping backend handler for endpoint")
 				// TODO: emit a "scrape failed" metric of some sort
 				return
 			}

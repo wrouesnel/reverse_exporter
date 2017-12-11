@@ -3,7 +3,6 @@
 package apisettings
 
 import (
-	"net/url"
 	"path/filepath"
 )
 
@@ -15,8 +14,6 @@ const (
 type APISettings struct {
 	// ContextPath is any URL-prefix being passed by a reverse proxy.
 	ContextPath string
-	// StaticProxy is the URL of a proxy serving static assets.
-	StaticProxy *url.URL
 }
 
 // WrapPath wraps a given URL string in the context path
