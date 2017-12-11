@@ -212,7 +212,7 @@ func reverseProxy(rp config.ReverseExporter) (http.HandlerFunc, error) {
 		allMfs := <-mfsResultCh
 
 		// serialize the resultant families
-		metricProxy.HandleSerializeMetrics(wr, req, allMfs)
+		metricProxy.handleSerializeMetrics(wr, req, allMfs)
 	})
 
 	// Add authentication to the handler

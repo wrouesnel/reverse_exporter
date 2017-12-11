@@ -9,7 +9,7 @@ import (
 
 var _ MetricProxy = &rewriteProxy{}
 
-// rewriteProxy implements the MetricProxy interface by proxing to another proxy
+// rewriteProxy implements the MetricProxy interface by proxying to another proxy
 // and rewriting the metrics it returns.
 type rewriteProxy struct {
 	proxy MetricProxy

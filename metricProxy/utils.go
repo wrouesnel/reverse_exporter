@@ -4,6 +4,12 @@ import (
 	"io"
 	"sort"
 
+	"bytes"
+	"compress/gzip"
+	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
@@ -63,4 +69,63 @@ func rewriteMetrics(labels model.LabelSet, mfs []*dto.MetricFamily) {
 			m.Label = outputPairs
 		}
 	}
+}
+
+// handleSerializeMetrics writes the samples as metrics to the given http.ResponseWriter
+func handleSerializeMetrics(w http.ResponseWriter, req *http.Request, mfs []*dto.MetricFamily) {
+	contentType := expfmt.Negotiate(req.Header)
+	buf := getBuf()
+	defer giveBuf(buf)
+	writer, encoding := decorateWriter(req, buf)
+	enc := expfmt.NewEncoder(writer, contentType)
+	var lastErr error
+	for _, mf := range mfs {
+		if err := enc.Encode(mf); err != nil {
+			lastErr = err
+			http.Error(w, "An error has occurred during metrics encoding:\n\n"+err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	if closer, ok := writer.(io.Closer); ok {
+		closer.Close()
+	}
+	if lastErr != nil && buf.Len() == 0 {
+		http.Error(w, "No metrics encoded, last error:\n\n"+lastErr.Error(), http.StatusInternalServerError)
+		return
+	}
+	header := w.Header()
+	header.Set(contentTypeHeader, string(contentType))
+	header.Set(contentLengthHeader, fmt.Sprint(buf.Len()))
+	if encoding != "" {
+		header.Set(contentEncodingHeader, encoding)
+	}
+	w.Write(buf.Bytes())
+}
+
+// decorateWriter wraps a writer to handle gzip compression if requested.  It
+// returns the decorated writer and the appropriate "Content-Encoding" header
+// (which is empty if no compression is enabled).
+func decorateWriter(request *http.Request, writer io.Writer) (io.Writer, string) {
+	header := request.Header.Get(acceptEncodingHeader)
+	parts := strings.Split(header, ",")
+	for _, part := range parts {
+		part := strings.TrimSpace(part)
+		if part == "gzip" || strings.HasPrefix(part, "gzip;") {
+			return gzip.NewWriter(writer), "gzip"
+		}
+	}
+	return writer, ""
+}
+
+func getBuf() *bytes.Buffer {
+	buf := bufPool.Get()
+	if buf == nil {
+		return &bytes.Buffer{}
+	}
+	return buf.(*bytes.Buffer)
+}
+
+func giveBuf(buf *bytes.Buffer) {
+	buf.Reset()
+	bufPool.Put(buf)
 }
