@@ -1,10 +1,10 @@
 package config
 
 import (
+	"errors"
 	. "github.com/prometheus/common/model"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"errors"
 )
 
 // TODO: error if a user tries to override this with labels
@@ -13,7 +13,7 @@ const exporterNameLabel = "exporter_name"
 // nolint: golint
 var (
 	ErrInvalidExportersConfig = errors.New("exporters key is not in the known format")
-	ErrUnknownExporterType = errors.New("unknown exporter type specified")
+	ErrUnknownExporterType    = errors.New("unknown exporter type specified")
 )
 
 // Load parses the given string as a YAML ExporterConfig
@@ -178,7 +178,7 @@ func (e Exporter) GetBaseExporter() Exporter {
 
 // FileExporterConfig contains configuration specific to reverse proxying files
 type FileExporterConfig struct {
-	Path string `yaml:"path"`
+	Path     string `yaml:"path"`
 	Exporter `yaml:",inline"`
 }
 
@@ -190,8 +190,8 @@ func (fec *FileExporterConfig) UnmarshalYAML(unmarshal func(interface{}) error) 
 
 // ExecExporterConfig contains configuration specific to reverse proxying executable scripts
 type ExecExporterConfig struct {
-	Command string   `yaml:"command"`
-	Args    []string `yaml:"args"`
+	Command  string   `yaml:"command"`
+	Args     []string `yaml:"args"`
 	Exporter `yaml:",inline"`
 }
 
@@ -203,10 +203,10 @@ func (eec *ExecExporterConfig) UnmarshalYAML(unmarshal func(interface{}) error) 
 
 // ExecCachingExporterConfig contains configuration specific to reverse proxying cached executable scripts
 type ExecCachingExporterConfig struct {
-	Command string   `yaml:"command"`
-	Args    []string `yaml:"args"`
+	Command      string   `yaml:"command"`
+	Args         []string `yaml:"args"`
 	ExecInterval Duration `yaml:"exec_interval"`
-	Exporter `yaml:",inline"`
+	Exporter     `yaml:",inline"`
 	//ExecExporterConfig `yaml:",inline"`
 }
 
@@ -228,7 +228,7 @@ type HttpExporterConfig struct {
 	// ForwardUrlParams determines whether the exporter will have ALL url params
 	// of the parent request added to it.
 	ForwardUrlParams bool `yaml:"forward_url_params"`
-	Exporter `yaml:",inline"`
+	Exporter         `yaml:",inline"`
 }
 
 // UnmarshalYAML implements yaml.Unmarshaller

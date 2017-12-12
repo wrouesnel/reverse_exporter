@@ -125,7 +125,7 @@ func main() {
 
 	app.Flag("config.file", "Path to the configuration file").Default("reverse_exporter.yml").StringVar(&appConfig.ConfigFile)
 	app.Flag("http.context-path", "Context-path to be globally applied to the configured proxies").StringVar(&appConfig.ContextPath)
-	app.Flag("http.listen-addrs","Comma-separated list of listen address configurations").Default("tcp://0.0.0.0:9998").StringVar(&appConfig.ListenAddrs)
+	app.Flag("http.listen-addrs", "Comma-separated list of listen address configurations").Default("tcp://0.0.0.0:9998").StringVar(&appConfig.ListenAddrs)
 	app.Version(version.Version)
 
 	log.AddFlags(app)

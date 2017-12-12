@@ -7,18 +7,18 @@ import (
 	"github.com/wrouesnel/reverse_exporter/config"
 	"net/url"
 
+	"github.com/abbot/go-http-auth"
 	dto "github.com/prometheus/client_model/go"
-	"time"
 	log "github.com/prometheus/common/log"
 	"net/http"
-	"github.com/abbot/go-http-auth"
+	"time"
 )
 
 var (
 	ErrNameFieldOverrideAttempted = errors.New("cannot override name field with additional labels")
 	ErrFileProxyScrapeError       = errors.New("file proxy file read failed")
-	ErrUnknownExporterType		  = errors.New("cannot configure unknown exporter type")
-	ErrExporterNameUsedTwice = errors.New("cannot use the same exporter name twice for one endpoint")
+	ErrUnknownExporterType        = errors.New("cannot configure unknown exporter type")
+	ErrExporterNameUsedTwice      = errors.New("cannot use the same exporter name twice for one endpoint")
 )
 
 // MetricProxy presents an interface which allows a context-cancellable scrape of a backend proxy
@@ -34,7 +34,7 @@ func NewMetricReverseProxy(exporter config.ReverseExporter) (http.Handler, error
 	// Initialize a basic reverse proxy
 	backend := &ReverseProxyEndpoint{
 		metricPath: exporter.Path,
-		backends: make([]MetricProxy, 0),
+		backends:   make([]MetricProxy, 0),
 	}
 	backend.handler = backend.serveMetricsHTTP
 
@@ -45,7 +45,7 @@ func NewMetricReverseProxy(exporter config.ReverseExporter) (http.Handler, error
 		var newExporter MetricProxy
 
 		baseExporter := exporter.(config.BaseExporter).GetBaseExporter()
-		log := log.With("name",baseExporter.Name)
+		log := log.With("name", baseExporter.Name)
 
 		switch e := exporter.(type) {
 		case config.FileExporterConfig:
@@ -62,8 +62,8 @@ func NewMetricReverseProxy(exporter config.ReverseExporter) (http.Handler, error
 		case config.HttpExporterConfig:
 			log.Debugln("Adding new http exporter proxy")
 			newExporter = &netProxy{
-				address: e.Address,
-				deadline: time.Duration(e.Timeout),
+				address:            e.Address,
+				deadline:           time.Duration(e.Timeout),
 				forwardQueryParams: e.ForwardUrlParams,
 			}
 		default:
@@ -99,7 +99,7 @@ func NewMetricReverseProxy(exporter config.ReverseExporter) (http.Handler, error
 
 		// Configure the rewriting proxy shim.
 		rewriteProxy := &rewriteProxy{
-			proxy: newExporter,
+			proxy:  newExporter,
 			labels: labels,
 		}
 
@@ -117,7 +117,7 @@ func NewMetricReverseProxy(exporter config.ReverseExporter) (http.Handler, error
 		provider := auth.HtpasswdFileProvider(exporter.HtPasswdFile)
 		authenticator := auth.NewBasicAuthenticator(authRealm, provider)
 
-		authHandler := func (w http.ResponseWriter, r *auth.AuthenticatedRequest) {
+		authHandler := func(w http.ResponseWriter, r *auth.AuthenticatedRequest) {
 			backend.handler(w, &r.Request)
 		}
 		backend.handler = authenticator.Wrap(authHandler)

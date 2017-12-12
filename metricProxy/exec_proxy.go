@@ -32,7 +32,7 @@ type execProxy struct {
 	waitingMtx     *sync.Mutex
 	// Incoming scrapes send to this channel to request results
 	execReqCh chan<- struct{}
-	log log.Logger
+	log       log.Logger
 }
 
 // newExecProxy initializes a new execProxy and its goroutines.
@@ -45,7 +45,7 @@ func newExecProxy(config *config.ExecExporterConfig) *execProxy {
 		waitingScrapes: make(map[chan<- []*dto.MetricFamily]struct{}),
 		waitingMtx:     &sync.Mutex{},
 		execReqCh:      execReqCh,
-		log: log.Base(),
+		log:            log.Base(),
 	}
 
 	go newProxy.execer(execReqCh)
@@ -163,8 +163,8 @@ func newExecCachingProxy(config *config.ExecCachingExporterConfig) *execCachingP
 	rdyCh := make(chan struct{})
 
 	newProxy := execCachingProxy{
-		commandPath: config.Command,
-		arguments:   config.Args,
+		commandPath:  config.Command,
+		arguments:    config.Args,
 		execInterval: time.Duration(config.ExecInterval),
 
 		lastResult:    make([]*dto.MetricFamily, 0),
