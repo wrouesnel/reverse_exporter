@@ -41,7 +41,7 @@ func (rpe *ReverseProxyEndpoint) serveMetricsHTTP(wr http.ResponseWriter, req *h
 	log.Debugln("Scraping", len(rpe.backends), "exporters")
 	for _, backend := range rpe.backends {
 		wg.Add(1)
-		go func(mfsCh chan<- []*dto.MetricFamily) {
+		go func(mfsCh chan<- []*dto.MetricFamily, backend MetricProxy) {
 			defer wg.Done()
 			mfs, err := backend.Scrape(ctx, req.URL.Query())
 			if err != nil {
@@ -50,7 +50,7 @@ func (rpe *ReverseProxyEndpoint) serveMetricsHTTP(wr http.ResponseWriter, req *h
 				return
 			}
 			mfsCh <- mfs
-		}(mfsCh)
+		}(mfsCh, backend)
 	}
 	// metric aggregator combines all the scraped metrics and emits them to the
 	// result channel.

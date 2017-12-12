@@ -18,6 +18,15 @@ exporters export their own process information as a part of their metrics).
 
 tl;dr It's how you get `/metrics` to work with a fat container.
 
+# Notable Functionality
+
+* Combine and merge multiple exporters into a single `/metrics` endpoint
+* Append and override metric labels on all reverse proxied metrics
+* Support exposing metrics from static files on disk
+* Support intelligent on-scrape dynamic metrics from scripts 
+  (multiple scrapes are queued to single script execution preventing overloading)
+* Support periodic (cron-like) dynamic metrics from scripts
+
 ## Usage
 
 See `example.config.yml` for a config file including all parameters used in
@@ -29,3 +38,4 @@ The included `example.htpasswd` file includes users `reverse_exporter` and
 Together these files will setup an example environment when used with
 docker-compose. `docker-compose up` will setup the environment, with port `9998`
 bound to `127.0.0.1:9998` on the host.
+

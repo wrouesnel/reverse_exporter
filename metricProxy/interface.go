@@ -44,6 +44,9 @@ func NewMetricReverseProxy(exporter config.ReverseExporter) (http.Handler, error
 	for _, exporter := range exporter.Exporters {
 		var newExporter MetricProxy
 
+		baseExporter := exporter.(config.BaseExporter).GetBaseExporter()
+		log := log.With("name",baseExporter.Name)
+
 		switch e := exporter.(type) {
 		case config.FileExporterConfig:
 			log.Debugln("Adding new file exporter proxy")
@@ -64,11 +67,9 @@ func NewMetricReverseProxy(exporter config.ReverseExporter) (http.Handler, error
 				forwardQueryParams: e.ForwardUrlParams,
 			}
 		default:
-			log.Errorln("Unknown proxy configuration item found")
+			log.Errorf("Unknown proxy configuration item found: %T", e)
 			return nil, ErrUnknownExporterType
 		}
-
-		baseExporter := exporter.(config.Exporter)
 
 		// Got exporter, now add a rewrite proxy in front of it
 		labels := make(model.LabelSet)
@@ -77,7 +78,7 @@ func NewMetricReverseProxy(exporter config.ReverseExporter) (http.Handler, error
 		if _, found := usedNames[baseExporter.Name]; found == false {
 			usedNames[baseExporter.Name] = struct{}{}
 		} else {
-			log.Errorln("exporter name re-use even if rewrite is disabled is not allowed:", baseExporter.Name)
+			log.Errorln("Exporter name re-use even if rewrite is disabled is not allowed")
 			return nil, ErrExporterNameUsedTwice
 		}
 

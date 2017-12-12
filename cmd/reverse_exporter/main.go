@@ -50,9 +50,9 @@ func realMain(appConfig AppConfig) int {
 	router := httprouter.New()
 	router = api.NewAPI_v1(apiConfig, router)
 
-	log.Debugln("Initializing reverse proxy backends")
+	log.Debugln("Begin initializing reverse proxy backends")
 	initializedPaths := make(map[string]http.Handler)
-	for _, rp := range reverseConfig.ReversedExporters {
+	for _, rp := range reverseConfig.ReverseExporters {
 		if rp.Path == "" {
 			log.Errorln("Blank exporter paths are not allowed.")
 			return 1
@@ -74,6 +74,7 @@ func realMain(appConfig AppConfig) int {
 		initializedPaths[rp.Path] = proxyHandler
 	}
 	log.Debugln("Finished initializing reverse proxy backends")
+	log.With("num_reverse_endpoints", len(reverseConfig.ReverseExporters)).Infoln("Initialized backends")
 
 	log.Infoln("Starting HTTP server")
 	listenAddrs := strings.Split(appConfig.ListenAddrs, ",")
