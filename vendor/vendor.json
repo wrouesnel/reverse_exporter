@@ -9,6 +9,24 @@
 			"revisionTime": "2017-09-19T22:56:21Z"
 		},
 		{
+			"checksumSHA1": "KmjnydoAbofMieIWm+it5OWERaM=",
+			"path": "github.com/alecthomas/template",
+			"revision": "a0175ee3bccc567396460bf5acd36800cb10c49c",
+			"revisionTime": "2016-04-05T07:15:01Z"
+		},
+		{
+			"checksumSHA1": "3wt0pTXXeS+S93unwhGoLIyGX/Q=",
+			"path": "github.com/alecthomas/template/parse",
+			"revision": "a0175ee3bccc567396460bf5acd36800cb10c49c",
+			"revisionTime": "2016-04-05T07:15:01Z"
+		},
+		{
+			"checksumSHA1": "fCc3grA7vIxfBru7R3SqjcW+oLI=",
+			"path": "github.com/alecthomas/units",
+			"revision": "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a",
+			"revisionTime": "2015-10-22T06:55:26Z"
+		},
+		{
 			"checksumSHA1": "spyv5/YFBjYyZLZa1U2LBfDR8PM=",
 			"path": "github.com/beorn7/perks/quantile",
 			"revision": "4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9",
@@ -93,6 +111,12 @@
 			"revisionTime": "2017-11-17T16:30:51Z"
 		},
 		{
+			"checksumSHA1": "MGnqHnmEqc1fjnYiWReSiW8C27A=",
+			"path": "github.com/prometheus/common/log",
+			"revision": "2e54d0b93cba2fd133edc32211dcc32c06ef72ca",
+			"revisionTime": "2017-11-17T16:30:51Z"
+		},
+		{
 			"checksumSHA1": "YU+/K48IMawQnToO4ETE6a+hhj4=",
 			"path": "github.com/prometheus/common/model",
 			"revision": "2e54d0b93cba2fd133edc32211dcc32c06ef72ca",
@@ -163,6 +187,30 @@
 			"path": "golang.org/x/sys/unix",
 			"revision": "13fcbd661c8ececa8807a29b48407d674b1d8ed8",
 			"revisionTime": "2017-11-29T08:33:14Z"
+		},
+		{
+			"checksumSHA1": "riTVymIu2BFphV6UlA73Fn9tmmU=",
+			"path": "golang.org/x/sys/windows",
+			"revision": "13fcbd661c8ececa8807a29b48407d674b1d8ed8",
+			"revisionTime": "2017-11-29T08:33:14Z"
+		},
+		{
+			"checksumSHA1": "ZdFZFaXmCgEEaEhVPkyXrnhKhsg=",
+			"path": "golang.org/x/sys/windows/registry",
+			"revision": "13fcbd661c8ececa8807a29b48407d674b1d8ed8",
+			"revisionTime": "2017-11-29T08:33:14Z"
+		},
+		{
+			"checksumSHA1": "uVlUSSKplihZG7N+QJ6fzDZ4Kh8=",
+			"path": "golang.org/x/sys/windows/svc/eventlog",
+			"revision": "13fcbd661c8ececa8807a29b48407d674b1d8ed8",
+			"revisionTime": "2017-11-29T08:33:14Z"
+		},
+		{
+			"checksumSHA1": "QPs8F/aqKAAQJr8dLc3CVQ5SxlM=",
+			"path": "gopkg.in/alecthomas/kingpin.v2",
+			"revision": "8cccfa8eb2e3183254457fb1749b2667fbc364c7",
+			"revisionTime": "2016-02-17T09:03:01Z"
 		},
 		{
 			"checksumSHA1": "fRgp9UZPllOlkPssv7frzQx4z9A=",
