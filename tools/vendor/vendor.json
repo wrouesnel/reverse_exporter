@@ -39,10 +39,10 @@
 			"revisionTime": "2015-02-08T22:17:26Z"
 		},
 		{
-			"checksumSHA1": "HL3Dyr4dmbtBo+V3ULfRJMWAyoA=",
+			"checksumSHA1": "BSutFEM0ntKG8uteWpAdx2z7bxA=",
 			"path": "github.com/alecthomas/gometalinter",
-			"revision": "212b1b91e362ea0b0e441c9b53ce31e81405c240",
-			"revisionTime": "2017-11-26T10:02:12Z"
+			"revision": "2ecd20cca240c07a9277a0849f34e8822213edff",
+			"revisionTime": "2017-12-12T17:20:37Z"
 		},
 		{
 			"checksumSHA1": "fCc3grA7vIxfBru7R3SqjcW+oLI=",
@@ -119,8 +119,8 @@
 		{
 			"checksumSHA1": "REm9ddVDL+Pm1OPxjVMxxpIjyw4=",
 			"path": "github.com/golang/lint/golint",
-			"revision": "6aaf7c34af0f4c36a57e0c429bace4d706d8e931",
-			"revisionTime": "2017-10-05T22:33:36Z"
+			"revision": "f635bddafc7154957bd70209ee858a4b97e64a9b",
+			"revisionTime": "2017-12-12T03:12:48Z"
 		},
 		{
 			"checksumSHA1": "e/Kc2UOy1lKAy31xWlK37M1r2e8=",
@@ -425,14 +425,14 @@
 		{
 			"checksumSHA1": "eWl/ySoMqPr+Q9p9smYNkTgXu2w=",
 			"path": "github.com/opennota/check/cmd/structcheck",
-			"revision": "11e2eec79ec4f789607e3efbf405cdca2504d4cb",
-			"revisionTime": "2017-04-02T03:17:31Z"
+			"revision": "0ec6d92e97559edf84eebe7c51b069953d4b522c",
+			"revisionTime": "2017-12-04T22:39:13Z"
 		},
 		{
-			"checksumSHA1": "Ja04Qe8nP2zw9SYO+TzbebFt5M4=",
+			"checksumSHA1": "UU7qNDoHMqXU/m0v/cyb0wT4ehs=",
 			"path": "github.com/opennota/check/cmd/varcheck",
-			"revision": "11e2eec79ec4f789607e3efbf405cdca2504d4cb",
-			"revisionTime": "2017-04-02T03:17:31Z"
+			"revision": "0ec6d92e97559edf84eebe7c51b069953d4b522c",
+			"revisionTime": "2017-12-04T22:39:13Z"
 		},
 		{
 			"checksumSHA1": "F1IYMLBLAZaTOWnmXsgaxTGvrWI=",
@@ -509,14 +509,14 @@
 		{
 			"checksumSHA1": "V4M/6A62nVBzPFxPbN+EAatCrVs=",
 			"path": "golang.org/x/tools/cmd/goimports",
-			"revision": "36c7af3342056179a831c19ec142f2763b310f7b",
-			"revisionTime": "2017-11-29T19:51:57Z"
+			"revision": "64890f4e2b733655fee5077a5435a8812404c3a3",
+			"revisionTime": "2017-12-11T18:51:56Z"
 		},
 		{
 			"checksumSHA1": "V6/A1ZOZ2GUOZcRWcXegtci2FoU=",
 			"path": "golang.org/x/tools/cmd/gotype",
-			"revision": "36c7af3342056179a831c19ec142f2763b310f7b",
-			"revisionTime": "2017-11-29T19:51:57Z"
+			"revision": "64890f4e2b733655fee5077a5435a8812404c3a3",
+			"revisionTime": "2017-12-11T18:51:56Z"
 		},
 		{
 			"checksumSHA1": "nD89PLkMqA5CakR8SoDuj3iQz1M=",

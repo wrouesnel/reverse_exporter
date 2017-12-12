@@ -21,12 +21,15 @@ var (
 	// Locations to look for vendored linters.
 	vendoredSearchPaths = [][]string{
 		{"github.com", "alecthomas", "gometalinter", "_linters"},
-		{"gopkg.in", "alecthomas", "gometalinter.v1", "_linters"},
+		{"gopkg.in", "alecthomas", "gometalinter.v2", "_linters"},
 	}
+	defaultConfigPath = ".gometalinter.json"
+	Version           = "master"
 )
 
 func setupFlags(app *kingpin.Application) {
 	app.Flag("config", "Load JSON configuration from file.").Envar("GOMETALINTER_CONFIG").Action(loadConfig).String()
+	app.Flag("no-config", "Disable automatic loading of config file.").Bool()
 	app.Flag("disable", "Disable previously enabled linters.").PlaceHolder("LINTER").Short('D').Action(disableAction).Strings()
 	app.Flag("enable", "Enable previously disabled linters.").PlaceHolder("LINTER").Short('E').Action(enableAction).Strings()
 	app.Flag("linter", "Define a linter.").PlaceHolder("NAME:COMMAND:PATTERN").Action(cliLinterOverrides).StringMap()
@@ -35,12 +38,12 @@ func setupFlags(app *kingpin.Application) {
 	app.Flag("disable-all", "Disable all linters.").Action(disableAllAction).Bool()
 	app.Flag("enable-all", "Enable all linters.").Action(enableAllAction).Bool()
 	app.Flag("format", "Output format.").PlaceHolder(config.Format).StringVar(&config.Format)
-	app.Flag("vendored-linters", "Use vendored linters (recommended).").BoolVar(&config.VendoredLinters)
+	app.Flag("vendored-linters", "Use vendored linters (recommended) (DEPRECATED - use binary packages).").BoolVar(&config.VendoredLinters)
 	app.Flag("fast", "Only run fast linters.").BoolVar(&config.Fast)
-	app.Flag("install", "Attempt to install all known linters.").Short('i').BoolVar(&config.Install)
-	app.Flag("update", "Pass -u to go tool when installing.").Short('u').BoolVar(&config.Update)
-	app.Flag("force", "Pass -f to go tool when installing.").Short('f').BoolVar(&config.Force)
-	app.Flag("download-only", "Pass -d to go tool when installing.").BoolVar(&config.DownloadOnly)
+	app.Flag("install", "Attempt to install all known linters (DEPRECATED - use binary packages).").Short('i').BoolVar(&config.Install)
+	app.Flag("update", "Pass -u to go tool when installing (DEPRECATED - use binary packages).").Short('u').BoolVar(&config.Update)
+	app.Flag("force", "Pass -f to go tool when installing (DEPRECATED - use binary packages).").Short('f').BoolVar(&config.Force)
+	app.Flag("download-only", "Pass -d to go tool when installing (DEPRECATED - use binary packages).").BoolVar(&config.DownloadOnly)
 	app.Flag("debug", "Display messages for failed linters, etc.").Short('d').BoolVar(&config.Debug)
 	app.Flag("concurrency", "Number of concurrent linters to run.").PlaceHolder(fmt.Sprintf("%d", runtime.NumCPU())).Short('j').IntVar(&config.Concurrency)
 	app.Flag("exclude", "Exclude messages matching these regular expressions.").Short('e').PlaceHolder("REGEXP").StringsVar(&config.Exclude)
@@ -49,6 +52,7 @@ func setupFlags(app *kingpin.Application) {
 	app.Flag("vendor", "Enable vendoring support (skips 'vendor' directories and sets GO15VENDOREXPERIMENT=1).").BoolVar(&config.Vendor)
 	app.Flag("cyclo-over", "Report functions with cyclomatic complexity over N (using gocyclo).").PlaceHolder("10").IntVar(&config.Cyclo)
 	app.Flag("line-length", "Report lines longer than N (using lll).").PlaceHolder("80").IntVar(&config.LineLength)
+	app.Flag("misspell-locale", "Specify locale to use (using misspell).").PlaceHolder("").StringVar(&config.MisspellLocale)
 	app.Flag("min-confidence", "Minimum confidence interval to pass to golint.").PlaceHolder(".80").FloatVar(&config.MinConfidence)
 	app.Flag("min-occurrences", "Minimum occurrences to pass to goconst.").PlaceHolder("3").IntVar(&config.MinOccurrences)
 	app.Flag("min-const-length", "Minimum constant length.").PlaceHolder("3").IntVar(&config.MinConstLength)
@@ -81,25 +85,27 @@ func cliLinterOverrides(app *kingpin.Application, element *kingpin.ParseElement,
 	return nil
 }
 
-func loadConfig(app *kingpin.Application, element *kingpin.ParseElement, ctx *kingpin.ParseContext) error {
-	r, err := os.Open(*element.Value)
-	if err != nil {
-		return err
+func loadDefaultConfig(app *kingpin.Application, element *kingpin.ParseElement, ctx *kingpin.ParseContext) error {
+	if element != nil {
+		return nil
 	}
-	defer r.Close() // nolint: errcheck
-	err = json.NewDecoder(r).Decode(config)
-	if err != nil {
-		return err
-	}
-	for _, disable := range config.Disable {
-		for i, enable := range config.Enable {
-			if enable == disable {
-				config.Enable = append(config.Enable[:i], config.Enable[i+1:]...)
-				break
-			}
+
+	for _, elem := range ctx.Elements {
+		if f := elem.OneOf.Flag; f == app.GetFlag("config") || f == app.GetFlag("no-config") {
+			return nil
 		}
 	}
-	return err
+
+	configFile, found, err := findDefaultConfigFile()
+	if err != nil || !found {
+		return err
+	}
+
+	return loadConfigFile(configFile)
+}
+
+func loadConfig(app *kingpin.Application, element *kingpin.ParseElement, ctx *kingpin.ParseContext) error {
+	return loadConfigFile(*element.Value)
 }
 
 func disableAction(app *kingpin.Application, element *kingpin.ParseElement, ctx *kingpin.ParseContext) error {
@@ -171,8 +177,10 @@ func formatSeverity() string {
 }
 
 func main() {
+	kingpin.Version(Version)
 	pathsArg := kingpin.Arg("path", "Directories to lint. Defaults to \".\". <path>/... will recurse.").Strings()
 	app := kingpin.CommandLine
+	app.Action(loadDefaultConfig)
 	setupFlags(app)
 	app.Help = fmt.Sprintf(`Aggregate and normalise the output of a whole bunch of Go linters.
 

@@ -102,7 +102,12 @@ style: tools
 
 lint: tools
 	@echo Using $(CONCURRENT_LINTERS) processes
-	gometalinter -j $(CONCURRENT_LINTERS) --deadline=$(LINTER_DEADLINE) --disable=gotype $(GO_DIRS)
+	gometalinter -j $(CONCURRENT_LINTERS) --deadline=$(LINTER_DEADLINE) \
+		--enable-all \
+		--line-length=120 \
+		--disable=gocyclo --disable=gotype \
+		--exclude=assets/bindata.go \
+	    $(GO_DIRS)
 
 fmt: tools
 	gofmt -s -w $(GO_SRC)
