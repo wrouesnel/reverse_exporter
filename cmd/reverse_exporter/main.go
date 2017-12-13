@@ -19,6 +19,8 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
+// AppConfig represents the total command line application configuration which is
+// applied at startup.
 type AppConfig struct {
 	ConfigFile string
 	//MetricsPath string
@@ -48,7 +50,7 @@ func realMain(appConfig AppConfig) int {
 
 	// Setup the web UI
 	router := httprouter.New()
-	router = api.NewAPI_v1(apiConfig, router)
+	router = api.NewAPIv1(apiConfig, router)
 
 	log.Debugln("Begin initializing reverse proxy backends")
 	initializedPaths := make(map[string]http.Handler)
@@ -123,9 +125,12 @@ func main() {
 
 	app := kingpin.New("reverse_exporter", "Logical-decoding Prometheus exporter reverse proxy")
 
-	app.Flag("config.file", "Path to the configuration file").Default("reverse_exporter.yml").StringVar(&appConfig.ConfigFile)
-	app.Flag("http.context-path", "Context-path to be globally applied to the configured proxies").StringVar(&appConfig.ContextPath)
-	app.Flag("http.listen-addrs", "Comma-separated list of listen address configurations").Default("tcp://0.0.0.0:9998").StringVar(&appConfig.ListenAddrs)
+	app.Flag("config.file", "Path to the configuration file").
+		Default("reverse_exporter.yml").StringVar(&appConfig.ConfigFile)
+	app.Flag("http.context-path", "Context-path to be globally applied to the configured proxies").
+		StringVar(&appConfig.ContextPath)
+	app.Flag("http.listen-addrs", "Comma-separated list of listen address configurations").
+		Default("tcp://0.0.0.0:9998").StringVar(&appConfig.ListenAddrs)
 	app.Version(version.Version)
 
 	log.AddFlags(app)

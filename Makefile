@@ -57,7 +57,7 @@ CONCURRENT_LINTERS = $(shell gometalinter --help | grep -o 'concurrency=\w*' | c
 endif
 
 # LINTER_DEADLINE should be increased on CI services.
-LINTER_DEADLINE ?= 30s
+LINTER_DEADLINE ?= 60s
 
 # Ensure output dirs always exist.
 $(shell mkdir -p $(DIRS))
@@ -105,13 +105,13 @@ lint: tools
 	gometalinter -j $(CONCURRENT_LINTERS) --deadline=$(LINTER_DEADLINE) \
 		--enable-all \
 		--line-length=120 \
-		--disable=gocyclo --disable=gotype \
+		--disable=gocyclo --disable=gotype --disable=testify --disable=test \
 		--exclude=assets/bindata.go \
 	    $(GO_DIRS)
 
 fmt: tools
 	gofmt -s -w $(GO_SRC)
-	goimports  -w $(GO_SRC)
+	goimports -w $(GO_SRC)
 
 test: tools
 	@mkdir -p $(COVERDIR)

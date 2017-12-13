@@ -5,8 +5,8 @@ import (
 	"github.com/wrouesnel/reverse_exporter/api/apisettings"
 )
 
-// Appends a new API to the supplied router.
-func NewAPI_v1(settings apisettings.APISettings, router *httprouter.Router) *httprouter.Router {
+// NewAPIv1 appends a new API to the supplied router and returns the router.
+func NewAPIv1(settings apisettings.APISettings, router *httprouter.Router) *httprouter.Router {
 	// Connect setup
 	return router
 }

@@ -87,7 +87,7 @@ func handleSerializeMetrics(w http.ResponseWriter, req *http.Request, mfs []*dto
 		}
 	}
 	if closer, ok := writer.(io.Closer); ok {
-		closer.Close()
+		closer.Close() // nolint: errcheck
 	}
 	if lastErr != nil && buf.Len() == 0 {
 		http.Error(w, "No metrics encoded, last error:\n\n"+lastErr.Error(), http.StatusInternalServerError)
@@ -99,7 +99,7 @@ func handleSerializeMetrics(w http.ResponseWriter, req *http.Request, mfs []*dto
 	if encoding != "" {
 		header.Set(contentEncodingHeader, encoding)
 	}
-	w.Write(buf.Bytes())
+	w.Write(buf.Bytes()) // nolint: errcheck
 }
 
 // decorateWriter wraps a writer to handle gzip compression if requested.  It
@@ -109,7 +109,7 @@ func decorateWriter(request *http.Request, writer io.Writer) (io.Writer, string)
 	header := request.Header.Get(acceptEncodingHeader)
 	parts := strings.Split(header, ",")
 	for _, part := range parts {
-		part := strings.TrimSpace(part)
+		part = strings.TrimSpace(part)
 		if part == "gzip" || strings.HasPrefix(part, "gzip;") {
 			return gzip.NewWriter(writer), "gzip"
 		}

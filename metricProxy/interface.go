@@ -16,6 +16,7 @@ import (
 	log "github.com/prometheus/common/log"
 )
 
+// nolint: golint
 var (
 	ErrNameFieldOverrideAttempted = errors.New("cannot override name field with additional labels")
 	ErrFileProxyScrapeError       = errors.New("file proxy file read failed")
@@ -31,7 +32,7 @@ type MetricProxy interface {
 
 // NewMetricReverseProxy initializes a new reverse proxy from the given configuration.
 func NewMetricReverseProxy(exporter config.ReverseExporter) (http.Handler, error) {
-	log := log.With("path", exporter.Path)
+	log := log.With("path", exporter.Path) // nolint: vetshadow
 
 	// Initialize a basic reverse proxy
 	backend := &ReverseProxyEndpoint{
@@ -47,26 +48,24 @@ func NewMetricReverseProxy(exporter config.ReverseExporter) (http.Handler, error
 		var newExporter MetricProxy
 
 		baseExporter := exporter.(config.BaseExporter).GetBaseExporter()
-		log := log.With("name", baseExporter.Name)
+		log := log.With("name", baseExporter.Name) // nolint: vetshadow
 
 		switch e := exporter.(type) {
 		case config.FileExporterConfig:
 			log.Debugln("Adding new file exporter proxy")
-			newExporter = &fileProxy{
-				filePath: e.Path,
-			}
+			newExporter = newFileProxy(&e)
 		case config.ExecExporterConfig:
 			log.Debugln("Adding new exec exporter proxy")
 			newExporter = newExecProxy(&e)
 		case config.ExecCachingExporterConfig:
 			log.Debugln("Adding new caching exec exporter proxy")
 			newExporter = newExecCachingProxy(&e)
-		case config.HttpExporterConfig:
+		case config.HTTPExporterConfig:
 			log.Debugln("Adding new http exporter proxy")
 			newExporter = &netProxy{
 				address:            e.Address,
 				deadline:           time.Duration(e.Timeout),
-				forwardQueryParams: e.ForwardUrlParams,
+				forwardQueryParams: e.ForwardURLParams,
 			}
 		default:
 			log.Errorf("Unknown proxy configuration item found: %T", e)
@@ -77,7 +76,7 @@ func NewMetricReverseProxy(exporter config.ReverseExporter) (http.Handler, error
 		labels := make(model.LabelSet)
 
 		// Keep track of exporter name use to pre-empt collisions
-		if _, found := usedNames[baseExporter.Name]; found == false {
+		if _, found := usedNames[baseExporter.Name]; !found {
 			usedNames[baseExporter.Name] = struct{}{}
 		} else {
 			log.Errorln("Exporter name re-use even if rewrite is disabled is not allowed")
@@ -85,7 +84,7 @@ func NewMetricReverseProxy(exporter config.ReverseExporter) (http.Handler, error
 		}
 
 		// If not rewriting, log it.
-		if baseExporter.NoRewrite == false {
+		if !baseExporter.NoRewrite {
 			labels[reverseProxyNameLabel] = model.LabelValue(baseExporter.Name)
 		} else {
 			log.Debugln("Disabled explicit exporter name for", baseExporter.Name)

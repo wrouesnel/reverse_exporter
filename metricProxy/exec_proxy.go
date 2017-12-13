@@ -20,6 +20,7 @@ import (
 var _ MetricProxy = &execProxy{}
 
 var (
+	// ErrScrapeTimeoutBeforeExecFinished returned when a context times out before the exec exporter receives metrics
 	ErrScrapeTimeoutBeforeExecFinished = errors.New("scrape timed out before exec finished")
 )
 
@@ -60,7 +61,7 @@ func (ep *execProxy) execer(reqCh <-chan struct{}) {
 
 	for {
 		<-reqCh
-		// Got a request. Check there is non-zero waiting requestors (i.e. maybe this was satisifed by the
+		// Got a request. Check there is non-zero waiting requestors (i.e. maybe this was satisfied by the
 		// loop gone-by
 		if len(ep.waitingScrapes) == 0 {
 			// Nothing waiting, request from a previous loop.
@@ -69,8 +70,14 @@ func (ep *execProxy) execer(reqCh <-chan struct{}) {
 		ep.log.Debugln("Executing metric script to service new scrape request")
 		// Have at least 1 listener, start executing.
 
-		cmd := exec.Command(ep.commandPath, ep.arguments...)
-		outRdr, err := cmd.StdoutPipe()
+		cmd := exec.Command(ep.commandPath, ep.arguments...) // nolint: gas
+		outRdr, perr := cmd.StdoutPipe()
+		if perr != nil {
+			ep.log.With("error", perr.Error()).
+				Errorln("Error opening stdout pipe to metric script")
+			continue
+		}
+
 		if err := cmd.Start(); err != nil {
 			ep.log.With("error", err.Error()).
 				Errorln("Error starting metric script")
@@ -83,12 +90,15 @@ func (ep *execProxy) execer(reqCh <-chan struct{}) {
 		//	continue
 		//}
 
-		mfs, err := decodeMetrics(outRdr, expfmt.FmtText)
+		mfs, derr := decodeMetrics(outRdr, expfmt.FmtText)
 		// Hard kill the script once metric decoding finishes. It's the only way to be sure.
 		// Maybe sigterm with a timeout?
-		cmd.Process.Kill()
-		if err != nil {
-			ep.log.With("error", err.Error()).
+		if err := cmd.Process.Kill(); err != nil {
+			ep.log.With("error", derr.Error()).
+				Errorln("Error sending kill signal to subprocess")
+		}
+		if derr != nil {
+			ep.log.With("error", derr.Error()).
 				Errorln("Metric decoding from script output failed")
 			continue
 		}
@@ -187,12 +197,18 @@ func (ecp *execCachingProxy) execer(rdyCh chan<- struct{}) {
 		nextExec := ecp.lastExec.Add(ecp.execInterval)
 		ecp.log.With("next_exec", nextExec.String()).
 			Debugln("Waiting for next interval")
-		<-time.After(nextExec.Sub(time.Now()))
+		<-time.After(time.Until(nextExec))
 		ecp.log.Debugln("Executing metric script on timeout")
 
 		ecp.lastExec = time.Now()
-		cmd := exec.Command(ecp.commandPath, ecp.arguments...)
-		outRdr, err := cmd.StdoutPipe()
+		cmd := exec.Command(ecp.commandPath, ecp.arguments...) // nolint: gas
+		outRdr, perr := cmd.StdoutPipe()
+		if perr != nil {
+			ecp.log.With("error", perr.Error()).
+				Errorln("Error opening stdout pipe to metric script")
+			continue
+		}
+
 		if err := cmd.Start(); err != nil {
 			ecp.log.With("error", err.Error()).
 				Errorln("Error starting metric script")
@@ -205,12 +221,15 @@ func (ecp *execCachingProxy) execer(rdyCh chan<- struct{}) {
 		//	continue
 		//}
 
-		mfs, err := decodeMetrics(outRdr, expfmt.FmtText)
+		mfs, derr := decodeMetrics(outRdr, expfmt.FmtText)
 		// Hard kill the script once metric decoding finishes. It's the only way to be sure.
 		// Maybe sigterm with a timeout?
-		cmd.Process.Kill()
-		if err != nil {
-			ecp.log.With("error", err.Error()).
+		if err := cmd.Process.Kill(); err != nil {
+			ecp.log.With("error", derr.Error()).
+				Errorln("Error sending kill signal to subprocess")
+		}
+		if derr != nil {
+			ecp.log.With("error", derr.Error()).
 				Errorln("Metric decoding from script output failed")
 			continue
 		}

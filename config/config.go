@@ -4,12 +4,12 @@ import (
 	"errors"
 	"io/ioutil"
 
-	. "github.com/prometheus/common/model"
+	"github.com/prometheus/common/model"
 	"gopkg.in/yaml.v2"
 )
 
 // TODO: error if a user tries to override this with labels
-const exporterNameLabel = "exporter_name"
+//const exporterNameLabel = "exporter_name"
 
 // nolint: golint
 var (
@@ -46,18 +46,21 @@ func Save(cfg *ExporterConfig) ([]byte, error) {
 	return out, err
 }
 
+// AuthType is one of several constants used to specify the type of authentication a reverse
+// proxy endpoint should have. The default empty string means no auth.
 type AuthType string
 
+// nolint: golint
 const (
-	AuthTypeNone  AuthType = ""
-	AuthTypeBasic AuthType = "basic"
+	AuthTypeNone  AuthType = ""      // no authentication
+	AuthTypeBasic AuthType = "basic" // basic authentication
 )
 
 // ExporterConfig is the global configuration.
 type ExporterConfig struct {
 	ReverseExporters []ReverseExporter `yaml:"reverse_exporters"`
 	// Catch-all to error on invalid config
-	XXX map[string]interface{} `yaml:,inline,omit_empty`
+	XXX map[string]interface{} `yaml:",inline,omit_empty"`
 }
 
 // ReverseExporter is a configuration struct describing a logically-decoded proxied exporter
@@ -95,16 +98,16 @@ func (re *ReverseExporter) UnmarshalYAML(unmarshal func(interface{}) error) erro
 		var exporterType string
 		var exporterConfig interface{}
 		for k, v := range exporterMap {
-			if s, ok := k.(string); !ok {
+			s, ok := k.(string)
+			if !ok {
 				return ErrInvalidExportersConfig
-			} else {
-				exporterType = s
 			}
+			exporterType = s
 			exporterConfig = v
 			break
 		}
 
-		// Remarshal the exporter config to YAML so it can be decoded explicitely
+		// Remarshal the exporter config to YAML so it can be decoded explicitly
 		// into a config object below.
 		exporterConfigYAML, yerr := yaml.Marshal(exporterConfig)
 		if yerr != nil {
@@ -116,32 +119,28 @@ func (re *ReverseExporter) UnmarshalYAML(unmarshal func(interface{}) error) erro
 		switch exporterType {
 		case "file":
 			config := FileExporterConfig{}
-			perr := yaml.Unmarshal(exporterConfigYAML,
-				(*FileExporterConfig)(&config))
+			perr := yaml.Unmarshal(exporterConfigYAML, &config)
 			if perr != nil {
 				return perr
 			}
 			parsedConfig = config
 		case "exec":
 			config := ExecExporterConfig{}
-			perr := yaml.Unmarshal(exporterConfigYAML,
-				(*ExecExporterConfig)(&config))
+			perr := yaml.Unmarshal(exporterConfigYAML, &config)
 			if perr != nil {
 				return perr
 			}
 			parsedConfig = config
 		case "exec-cached":
 			config := ExecCachingExporterConfig{}
-			perr := yaml.Unmarshal(exporterConfigYAML,
-				(*ExecCachingExporterConfig)(&config))
+			perr := yaml.Unmarshal(exporterConfigYAML, &config)
 			if perr != nil {
 				return perr
 			}
 			parsedConfig = config
 		case "http":
-			config := HttpExporterConfig{}
-			perr := yaml.Unmarshal(exporterConfigYAML,
-				(*HttpExporterConfig)(&config))
+			config := HTTPExporterConfig{}
+			perr := yaml.Unmarshal(exporterConfigYAML, &config)
 			if perr != nil {
 				return perr
 			}
@@ -204,9 +203,9 @@ func (eec *ExecExporterConfig) UnmarshalYAML(unmarshal func(interface{}) error) 
 
 // ExecCachingExporterConfig contains configuration specific to reverse proxying cached executable scripts
 type ExecCachingExporterConfig struct {
-	Command      string   `yaml:"command"`
-	Args         []string `yaml:"args"`
-	ExecInterval Duration `yaml:"exec_interval"`
+	Command      string         `yaml:"command"`
+	Args         []string       `yaml:"args"`
+	ExecInterval model.Duration `yaml:"exec_interval"`
 	Exporter     `yaml:",inline"`
 	//ExecExporterConfig `yaml:",inline"`
 }
@@ -217,23 +216,23 @@ func (ecec *ExecCachingExporterConfig) UnmarshalYAML(unmarshal func(interface{})
 	return unmarshal((*plain)(ecec))
 }
 
-// HttpExporterConfig contains configuration specific to reverse proxying normal http-based Prometheus exporters
-type HttpExporterConfig struct {
+// HTTPExporterConfig contains configuration specific to reverse proxying normal http-based Prometheus exporters
+type HTTPExporterConfig struct {
 	// A URI giving the address the exporter is found at.
 	// HTTP: http://localhost/metrics
 	// Unix: http://unix:/path/to/socket:/metrics
 	Address string `yaml:"address"`
 	// Timeout is the maximum length of time connecting to and retrieving the
 	// results of this exporter can take.
-	Timeout Duration `yaml:"timeout"`
-	// ForwardUrlParams determines whether the exporter will have ALL url params
+	Timeout model.Duration `yaml:"timeout"`
+	// ForwardURLParams determines whether the exporter will have ALL url params
 	// of the parent request added to it.
-	ForwardUrlParams bool `yaml:"forward_url_params"`
+	ForwardURLParams bool `yaml:"forward_url_params"`
 	Exporter         `yaml:",inline"`
 }
 
 // UnmarshalYAML implements yaml.Unmarshaller
-func (hec *HttpExporterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	type plain HttpExporterConfig
+func (hec *HTTPExporterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	type plain HTTPExporterConfig
 	return unmarshal((*plain)(hec))
 }

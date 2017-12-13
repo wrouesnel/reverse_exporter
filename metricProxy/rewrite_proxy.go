@@ -21,7 +21,8 @@ type rewriteProxy struct {
 // attached labelset.
 func (rpb *rewriteProxy) Scrape(ctx context.Context, values url.Values) ([]*dto.MetricFamily, error) {
 	// Derive a new context from the request
-	childCtx, _ := context.WithCancel(ctx)
+	childCtx, cancelFn := context.WithCancel(ctx)
+	defer cancelFn()
 	// Do the metric scrape
 	mfs, err := rpb.proxy.Scrape(childCtx, values)
 	if err != nil {

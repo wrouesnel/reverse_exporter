@@ -21,7 +21,7 @@ const (
 	acceptEncodingHeader  = "Accept-Encoding"
 )
 
-const acceptHeader = `application/vnd.google.protobuf;proto=io.prometheus.client.MetricFamily;encoding=delimited;q=0.7,text/plain;version=0.0.4;q=0.3,*/*;q=0.1`
+const acceptHeader = `application/vnd.google.protobuf;proto=io.prometheus.client.MetricFamily;encoding=delimited;q=0.7,text/plain;version=0.0.4;q=0.3,*/*;q=0.1` // nolint: lll
 
 const reverseProxyNameLabel = "exporter_name"
 const authRealm = "Secured"
@@ -43,7 +43,8 @@ type netProxy struct {
 // to be used with the request if needed.
 func (mrp *netProxy) Scrape(ctx context.Context, values url.Values) ([]*dto.MetricFamily, error) {
 	// Derive a new context from the request
-	childCtx, _ := context.WithCancel(ctx)
+	childCtx, cancelFn := context.WithCancel(ctx)
+	defer cancelFn()
 
 	requestValues := url.Values{}
 	if mrp.forwardQueryParams {
@@ -58,7 +59,7 @@ func (mrp *netProxy) Scrape(ctx context.Context, values url.Values) ([]*dto.Metr
 }
 
 // scrape decodes MetricFamily's from the wire format, and returns them ready to be proxied.
-func scrape(ctx context.Context, deadline time.Duration, address string, values url.Values) ([]*dto.MetricFamily, error) {
+func scrape(ctx context.Context, deadline time.Duration, address string, values url.Values) ([]*dto.MetricFamily, error) { // nolint: lll
 	req, err := http.NewRequest("GET", address, nil)
 	if err != nil {
 		return nil, err
@@ -73,12 +74,15 @@ func scrape(ctx context.Context, deadline time.Duration, address string, values 
 		req.URL.RawQuery = values.Encode()
 	}
 
-	// FIXME: specify a real client
-	resp, err := ctxhttp.Do(ctx, http.DefaultClient, req)
+	// Derive a new context with a deadline
+	childCtx, cancelFn := context.WithTimeout(ctx, deadline)
+	defer cancelFn()
+
+	resp, err := ctxhttp.Do(childCtx, http.DefaultClient, req)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint: errcheck
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("server returned HTTP status %s", resp.Status)
