@@ -5,6 +5,8 @@ cache:
   - tools/pkg
 go:
 - '1.9'
+env:
+- LINTER_DEADLINE=180s
 script:
 - make all
 - make release
