@@ -1,10 +1,11 @@
 package metricProxy
 
 import (
-	dto "github.com/prometheus/client_model/go"
-	"github.com/prometheus/common/log"
 	"net/http"
 	"sync"
+
+	dto "github.com/prometheus/client_model/go"
+	"github.com/prometheus/common/log"
 )
 
 // ReverseProxyEndpoint wraps a collection of ReverseProxyBackends. It exposes an HTTP endpoint

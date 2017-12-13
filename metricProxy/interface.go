@@ -3,15 +3,17 @@ package metricProxy
 import (
 	"context"
 	"errors"
+	"net/url"
+
 	"github.com/prometheus/common/model"
 	"github.com/wrouesnel/reverse_exporter/config"
-	"net/url"
+
+	"net/http"
+	"time"
 
 	"github.com/abbot/go-http-auth"
 	dto "github.com/prometheus/client_model/go"
 	log "github.com/prometheus/common/log"
-	"net/http"
-	"time"
 )
 
 var (

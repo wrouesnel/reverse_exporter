@@ -98,7 +98,7 @@ assets/bindata.go: assets/generated $(WEB_BUILT_ASSETS)
 		assets/generated/...
 
 style: tools
-	gometalinter --disable-all --enable=gofmt --vendor $(GO_DIRS)
+	gometalinter --disable-all --enable=gofmt --enable=goimports --vendor $(GO_DIRS)
 
 lint: tools
 	@echo Using $(CONCURRENT_LINTERS) processes
@@ -111,6 +111,7 @@ lint: tools
 
 fmt: tools
 	gofmt -s -w $(GO_SRC)
+	goimports  -w $(GO_SRC)
 
 test: tools
 	@mkdir -p $(COVERDIR)

@@ -2,9 +2,10 @@ package config
 
 import (
 	"errors"
+	"io/ioutil"
+
 	. "github.com/prometheus/common/model"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
 )
 
 // TODO: error if a user tries to override this with labels

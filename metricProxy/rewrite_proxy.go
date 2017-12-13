@@ -2,9 +2,10 @@ package metricProxy
 
 import (
 	"context"
+	"net/url"
+
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/model"
-	"net/url"
 )
 
 var _ MetricProxy = &rewriteProxy{}
