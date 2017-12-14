@@ -38,7 +38,7 @@ var _ = Suite(&ExecProxySuite{})
 
 // initProxyScript sets up a dummy exec proxy config from a variable for us.
 func (s *ExecProxySuite) initProxyScript(c *C, script string) config.ExecExporterConfig {
-	f, err := ioutil.TempFile("",fmt.Sprintf("exec_proxy_test_%s", script))
+	f, err := ioutil.TempFile("",fmt.Sprintf("exec_proxy_test_%s", c.TestName()))
 	c.Assert(err, IsNil)
 
 	scriptPath := f.Name()
@@ -68,9 +68,11 @@ func (s *ExecProxySuite) TestExecProxy(c *C) {
 	c.Assert(execProxy, Not(IsNil))
 	c.Check(execProxy.log, Not(IsNil))
 	c.Check(execProxy.arguments, DeepEquals, config.Args)
-	c.Check(execProxy.commandPath, Equals, config.Command))
+	c.Check(execProxy.commandPath, Equals, config.Command)
 
 	ctx := context.Background()
+	//tctx, cancelFn := context.WithTimeout(ctx, time.Second)
+	//defer cancelFn()
 	mfs, err := execProxy.Scrape(ctx, nil)
 	c.Check(err, IsNil)
 	c.Check(len(mfs), Equals, execProxyScriptNumMetrics)
@@ -84,10 +86,12 @@ func (s *ExecProxySuite) TestExecProxyWithBrokenScript(c *C) {
 	c.Assert(execProxy, Not(IsNil))
 	c.Check(execProxy.log, Not(IsNil))
 	c.Check(execProxy.arguments, DeepEquals, config.Args)
-	c.Check(execProxy.commandPath, Equals, config.Command))
+	c.Check(execProxy.commandPath, Equals, config.Command)
 
 	ctx := context.Background()
-	mfs, err := execProxy.Scrape(ctx, nil)
+	tctx, cancelFn := context.WithTimeout(ctx, time.Second)
+	defer cancelFn()
+	mfs, err := execProxy.Scrape(tctx, nil)
 	c.Check(err, Not(IsNil))
 	c.Check(len(mfs), Equals, 0)
 }
@@ -100,12 +104,12 @@ func (s *ExecProxySuite) TestExecProxyWithNeverendingScript(c *C) {
 	c.Assert(execProxy, Not(IsNil))
 	c.Check(execProxy.log, Not(IsNil))
 	c.Check(execProxy.arguments, DeepEquals, config.Args)
-	c.Check(execProxy.commandPath, Equals, config.Command))
+	c.Check(execProxy.commandPath, Equals, config.Command)
 
 	ctx := context.Background()
 	tctx, cancelFn := context.WithTimeout(ctx, time.Second)
 	defer cancelFn()
 	mfs, err := execProxy.Scrape(tctx, nil)
-	c.Check(err, Not(IsNil))
+	c.Check(err, Not(IsNil))	// scrape should time out
 	c.Check(len(mfs), Equals, 0)
 }
