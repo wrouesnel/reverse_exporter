@@ -3,6 +3,7 @@ package metricProxy
 import (
 	"io"
 	"testing"
+
 	. "gopkg.in/check.v1"
 )
 

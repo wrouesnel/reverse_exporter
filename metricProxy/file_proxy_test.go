@@ -13,18 +13,19 @@ import (
 const testFileMetricsLen = 1
 const testFileMetricName string = "constant_file_metric"
 const testFileMetricValue float64 = 100
+
 var testFileMetrics string = fmt.Sprintf(`
 # HELP constant_file_metric This is a sample metric which is a constant
 # TYPE constant_file_metric gauge
 %s %v
-`,testFileMetricName, testFileMetricValue)
+`, testFileMetricName, testFileMetricValue)
 
 type FileProxySuite struct{}
 
 var _ = Suite(&FileProxySuite{})
 
 func (s *FileProxySuite) TestFileProxy(c *C) {
-	tempMetrics, err := ioutil.TempFile("","file_proxy_test")
+	tempMetrics, err := ioutil.TempFile("", "file_proxy_test")
 	c.Assert(err, IsNil)
 
 	// Get the path to the test metrics
@@ -39,9 +40,9 @@ func (s *FileProxySuite) TestFileProxy(c *C) {
 	config := config.FileExporterConfig{
 		Path: filename,
 		Exporter: config.Exporter{
-			Name: "test-file-exporter",
+			Name:      "test-file-exporter",
 			NoRewrite: false,
-			Labels: nil,
+			Labels:    nil,
 		},
 	}
 
@@ -76,7 +77,7 @@ func (s *FileProxySuite) TestFileProxy(c *C) {
 
 	mfs, err = fileProxy.Scrape(ctx, nil)
 	c.Assert(err, IsNil, Commentf("metric scrape failed after new metrics added"))
-	c.Check(len(mfs), Equals, testFileMetricsLen + 1, Commentf("didn't receive right number of metrics"))
+	c.Check(len(mfs), Equals, testFileMetricsLen+1, Commentf("didn't receive right number of metrics"))
 
 	// Check fileProxy fails when file doesn't exist
 	os.Remove(filename)

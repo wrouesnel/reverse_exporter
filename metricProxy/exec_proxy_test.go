@@ -30,7 +30,7 @@ while [ 1 ]; do
 done
 `
 
-type ExecProxySuite struct{
+type ExecProxySuite struct {
 	testScript string
 }
 
@@ -38,22 +38,22 @@ var _ = Suite(&ExecProxySuite{})
 
 // initProxyScript sets up a dummy exec proxy config from a variable for us.
 func (s *ExecProxySuite) initProxyScript(c *C, script string) config.ExecExporterConfig {
-	f, err := ioutil.TempFile("",fmt.Sprintf("exec_proxy_test_%s", c.TestName()))
+	f, err := ioutil.TempFile("", fmt.Sprintf("exec_proxy_test_%s", c.TestName()))
 	c.Assert(err, IsNil)
 
 	scriptPath := f.Name()
 
-	f.WriteString(execProxyScript)
+	f.WriteString(script)
 	f.Chmod(os.FileMode(0700)) // Make the script executable
 	f.Close()
 
 	config := config.ExecExporterConfig{
 		Command: scriptPath,
-		Args: []string{"foo", "bar"},
+		Args:    []string{"foo", "bar"},
 		Exporter: config.Exporter{
-			Name: "test_exec_proxy",
+			Name:      "test_exec_proxy",
 			NoRewrite: false,
-			Labels: nil,
+			Labels:    nil,
 		},
 	}
 
@@ -100,6 +100,9 @@ func (s *ExecProxySuite) TestExecProxyWithNeverendingScript(c *C) {
 	config := s.initProxyScript(c, brokenStalledExecProxyScript)
 	defer os.Remove(config.Command)
 
+	cmdFile, rerr := ioutil.ReadFile(config.Command)
+	c.Assert(rerr, IsNil)
+
 	execProxy := newExecProxy(&config)
 	c.Assert(execProxy, Not(IsNil))
 	c.Check(execProxy.log, Not(IsNil))
@@ -110,6 +113,6 @@ func (s *ExecProxySuite) TestExecProxyWithNeverendingScript(c *C) {
 	tctx, cancelFn := context.WithTimeout(ctx, time.Second)
 	defer cancelFn()
 	mfs, err := execProxy.Scrape(tctx, nil)
-	c.Check(err, Not(IsNil))	// scrape should time out
-	c.Check(len(mfs), Equals, 0)
+	c.Check(err, Not(IsNil)) // scrape should time out
+	c.Check(len(mfs), Equals, 0, Commentf("Got metric families: %v\nScript:\n%s", mfs, string(cmdFile)))
 }
