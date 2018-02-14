@@ -113,6 +113,59 @@ func (s *ExecProxySuite) TestExecProxyWithNeverendingScript(c *C) {
 	tctx, cancelFn := context.WithTimeout(ctx, time.Second)
 	defer cancelFn()
 	mfs, err := execProxy.Scrape(tctx, nil)
-	c.Check(err, Not(IsNil)) // scrape should time out
+	c.Check(err, Not(IsNil)) // scrape should time out and not get data
 	c.Check(len(mfs), Equals, 0, Commentf("Got metric families: %v\nScript:\n%s", mfs, string(cmdFile)))
+}
+
+func (s *ExecProxySuite) TestExecProxyQueuesCorrectly(c *C) {
+	config := s.initProxyScript(c, brokenStalledExecProxyScript)
+	defer os.Remove(config.Command)
+
+	cmdFile, rerr := ioutil.ReadFile(config.Command)
+	c.Assert(rerr, IsNil)
+
+	execProxy := newExecProxy(&config)
+	c.Assert(execProxy, Not(IsNil))
+	c.Check(execProxy.log, Not(IsNil))
+	c.Check(execProxy.arguments, DeepEquals, config.Args)
+	c.Check(execProxy.commandPath, Equals, config.Command)
+
+	// Make a bunch of contexts
+	ctxs := []context.Context{}
+	cFns := []context.CancelFunc{}
+	doneChs := []chan struct{}{}
+
+	for i := 0; i < 10; i++ {
+		ctx := context.Background()
+		tctx, cancelFn := context.WithCancel(ctx)
+		ctxs = append(ctxs, tctx)
+		cFns = append(cFns, cancelFn)
+		doneCh := make(chan struct{})
+		doneChs = append(doneChs, doneCh)
+		// Invoke scrapes
+		go func(thisDoneCh chan struct{}) {
+			mfs, err := execProxy.Scrape(tctx, nil)
+			c.Check(err, Not(IsNil)) // scrape should time out and not get data
+			c.Check(len(mfs), Equals, 0, Commentf("Got metric families: %v\nScript:\n%s", mfs, string(cmdFile)))
+			close(thisDoneCh)
+		}(doneCh)
+	}
+
+	// Kill scrapes 1 by 1 - if things are working correctly, we shouldn't have multiple scrapes error at
+	// once since the others are still alive.
+	for i := 0; i < 10; i++ {
+		cFns[i]()
+		// Check the channel we expect to close is closed
+		<-doneChs[i]
+		// Check all the other channels are not
+		for k := i + 1; k < 10; k++ {
+			select {
+			case <-doneChs[k]:
+				c.Errorf("Other channels exited when one scrape was cancelled")
+			default:
+				c.Logf("Channel %d correctly still active after %d was cancelled", k, i)
+				continue
+			}
+		}
+	}
 }
