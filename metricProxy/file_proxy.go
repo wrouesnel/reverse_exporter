@@ -35,9 +35,9 @@ func newFileProxy(config *config.FileExporterConfig) *fileProxy {
 func (fp *fileProxy) Scrape(ctx context.Context, values url.Values) ([]*dto.MetricFamily, error) {
 	retMetrics := make([]*dto.MetricFamily, 0)
 
-	metricFile, err := os.OpenFile(fp.filePath, os.O_RDONLY, os.FileMode(0777))
-	if err != nil {
-		return retMetrics, errwrap.Wrap(ErrFileProxyScrapeError, err)
+	metricFile, ferr := os.OpenFile(fp.filePath, os.O_RDONLY, os.FileMode(0777))
+	if ferr != nil {
+		return retMetrics, errwrap.Wrap(ErrFileProxyScrapeError, ferr)
 	}
 
 	// Ensure weird file behavior doesn't leave multiple open processes
@@ -48,9 +48,9 @@ func (fp *fileProxy) Scrape(ctx context.Context, values url.Values) ([]*dto.Metr
 		}
 	}()
 
-	mfs, err := decodeMetrics(rc, expfmt.FmtText)
-	if err != nil {
-		return retMetrics, errwrap.Wrap(ErrFileProxyScrapeError, err)
+	mfs, derr := decodeMetrics(rc, expfmt.FmtText)
+	if derr != nil {
+		return retMetrics, errwrap.Wrap(ErrFileProxyScrapeError, derr)
 	}
 
 	return mfs, nil

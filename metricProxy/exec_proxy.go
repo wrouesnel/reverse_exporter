@@ -60,8 +60,6 @@ type execCachingProxy struct {
 
 // newExecProxy initializes a new execProxy and its goroutines.
 func newExecProxy(config *config.ExecExporterConfig) *execProxy {
-	execReqCh := make(chan struct{})
-
 	newProxy := execProxy{
 		commandPath:     config.Command,
 		arguments:       config.Args,
@@ -71,7 +69,7 @@ func newExecProxy(config *config.ExecExporterConfig) *execProxy {
 		log:             log.Base(),
 	}
 
-	go newProxy.execer(execReqCh)
+	go newProxy.execer()
 
 	return &newProxy
 }
@@ -144,7 +142,7 @@ func (ep *execProxy) doExec(ctx context.Context) *execProxyScrapeResult {
 	return result
 }
 
-func (ep *execProxy) execer(reqCh <-chan struct{}) {
+func (ep *execProxy) execer() {
 	ep.log.Debugln("ExecProxy started")
 
 	for {
@@ -158,7 +156,7 @@ func (ep *execProxy) execer(reqCh <-chan struct{}) {
 		ctx, cancelFn := context.WithCancel(context.Background())
 
 		// Wait for more scrape events and cancel the exec if we drop back to 0 before finishing
-		// (note we are implicitely using the lock from the outer loop)
+		// (note we are implicitly using the lock from the outer loop)
 		done := new(bool)
 		*done = false
 		finishedCh := make(chan struct{})

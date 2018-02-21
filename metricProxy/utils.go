@@ -87,7 +87,7 @@ func handleSerializeMetrics(w http.ResponseWriter, req *http.Request, mfs []*dto
 		}
 	}
 	if closer, ok := writer.(io.Closer); ok {
-		closer.Close() // nolint: errcheck
+		closer.Close() // nolint: errcheck,gas
 	}
 	if lastErr != nil && buf.Len() == 0 {
 		http.Error(w, "No metrics encoded, last error:\n\n"+lastErr.Error(), http.StatusInternalServerError)

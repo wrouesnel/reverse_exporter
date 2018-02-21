@@ -14,7 +14,7 @@ const testFileMetricsLen = 1
 const testFileMetricName string = "constant_file_metric"
 const testFileMetricValue float64 = 100
 
-var testFileMetrics string = fmt.Sprintf(`
+var testFileMetrics = fmt.Sprintf(`
 # HELP constant_file_metric This is a sample metric which is a constant
 # TYPE constant_file_metric gauge
 %s %v

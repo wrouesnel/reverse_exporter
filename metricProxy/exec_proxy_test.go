@@ -33,7 +33,6 @@ done
 `
 
 type ExecProxySuite struct {
-	testScript string
 }
 
 var _ = Suite(&ExecProxySuite{})
@@ -133,24 +132,24 @@ func (s *ExecProxySuite) TestExecProxyQueuesCorrectly(c *C) {
 	c.Check(execProxy.commandPath, Equals, config.Command)
 
 	// Make a bunch of contexts
-	ctxs := []context.Context{}
+	//ctxs := []context.Context{}
 	cFns := []context.CancelFunc{}
 	doneChs := []chan struct{}{}
 
 	for i := 0; i < 10; i++ {
 		ctx := context.Background()
 		tctx, cancelFn := context.WithCancel(ctx)
-		ctxs = append(ctxs, tctx)
+		//ctxs = append(ctxs, tctx)
 		cFns = append(cFns, cancelFn)
 		doneCh := make(chan struct{})
 		doneChs = append(doneChs, doneCh)
 		// Invoke scrapes
-		go func(thisDoneCh chan struct{}) {
-			mfs, err := execProxy.Scrape(tctx, nil)
+		go func(ctx context.Context, thisDoneCh chan struct{}) {
+			mfs, err := execProxy.Scrape(ctx, nil)
 			c.Check(err, Not(IsNil)) // scrape should time out and not get data
 			c.Check(len(mfs), Equals, 0, Commentf("Got metric families: %v\nScript:\n%s", mfs, string(cmdFile)))
 			close(thisDoneCh)
-		}(doneCh)
+		}(tctx, doneCh)
 	}
 
 	// Kill scrapes 1 by 1 - if things are working correctly, we shouldn't have multiple scrapes error at

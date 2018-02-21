@@ -24,7 +24,6 @@ EOF
 `
 
 type ExecCachingProxySuite struct {
-	testScript string
 }
 
 var _ = Suite(&ExecCachingProxySuite{})
