@@ -39,7 +39,7 @@ func (s *ExecCachingProxySuite) initProxyScript(c *C, script string) config.Exec
 	f.Chmod(os.FileMode(0700)) // Make the script executable
 	f.Close()
 
-	config := config.ExecCachingExporterConfig{
+	exporterConfig := config.ExecCachingExporterConfig{
 		Command:      scriptPath,
 		Args:         []string{"foo", "bar"},
 		ExecInterval: model.Duration(time.Second * 1),
@@ -50,18 +50,18 @@ func (s *ExecCachingProxySuite) initProxyScript(c *C, script string) config.Exec
 		},
 	}
 
-	return config
+	return exporterConfig
 }
 
 func (s *ExecCachingProxySuite) TestExecCachingProxy(c *C) {
-	config := s.initProxyScript(c, timestampingExecProxyScript)
-	defer os.Remove(config.Command)
+	exporterConfig := s.initProxyScript(c, timestampingExecProxyScript)
+	defer os.Remove(exporterConfig.Command)
 
-	execProxy := newExecCachingProxy(&config)
+	execProxy := newExecCachingProxy(&exporterConfig)
 	c.Assert(execProxy, Not(IsNil))
 	c.Check(execProxy.log, Not(IsNil))
-	c.Check(execProxy.arguments, DeepEquals, config.Args)
-	c.Check(execProxy.commandPath, Equals, config.Command)
+	c.Check(execProxy.arguments, DeepEquals, exporterConfig.Args)
+	c.Check(execProxy.commandPath, Equals, exporterConfig.Command)
 
 	ctx := context.Background()
 	//tctx, cancelFn := context.WithTimeout(ctx, time.Second)

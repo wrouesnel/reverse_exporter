@@ -48,7 +48,7 @@ func (s *ExecProxySuite) initProxyScript(c *C, script string) config.ExecExporte
 	f.Chmod(os.FileMode(0700)) // Make the script executable
 	f.Close()
 
-	config := config.ExecExporterConfig{
+	exporterConfig := config.ExecExporterConfig{
 		Command: scriptPath,
 		Args:    []string{"foo", "bar"},
 		Exporter: config.Exporter{
@@ -58,18 +58,18 @@ func (s *ExecProxySuite) initProxyScript(c *C, script string) config.ExecExporte
 		},
 	}
 
-	return config
+	return exporterConfig
 }
 
 func (s *ExecProxySuite) TestExecProxy(c *C) {
-	config := s.initProxyScript(c, execProxyScript)
-	defer os.Remove(config.Command)
+	exporterConfig := s.initProxyScript(c, execProxyScript)
+	defer os.Remove(exporterConfig.Command)
 
-	execProxy := newExecProxy(&config)
+	execProxy := newExecProxy(&exporterConfig)
 	c.Assert(execProxy, Not(IsNil))
 	c.Check(execProxy.log, Not(IsNil))
-	c.Check(execProxy.arguments, DeepEquals, config.Args)
-	c.Check(execProxy.commandPath, Equals, config.Command)
+	c.Check(execProxy.arguments, DeepEquals, exporterConfig.Args)
+	c.Check(execProxy.commandPath, Equals, exporterConfig.Command)
 
 	ctx := context.Background()
 	//tctx, cancelFn := context.WithTimeout(ctx, time.Second)
@@ -80,14 +80,14 @@ func (s *ExecProxySuite) TestExecProxy(c *C) {
 }
 
 func (s *ExecProxySuite) TestExecProxyWithBrokenScript(c *C) {
-	config := s.initProxyScript(c, brokenExecProxyScript)
-	defer os.Remove(config.Command)
+	exporterConfig := s.initProxyScript(c, brokenExecProxyScript)
+	defer os.Remove(exporterConfig.Command)
 
-	execProxy := newExecProxy(&config)
+	execProxy := newExecProxy(&exporterConfig)
 	c.Assert(execProxy, Not(IsNil))
 	c.Check(execProxy.log, Not(IsNil))
-	c.Check(execProxy.arguments, DeepEquals, config.Args)
-	c.Check(execProxy.commandPath, Equals, config.Command)
+	c.Check(execProxy.arguments, DeepEquals, exporterConfig.Args)
+	c.Check(execProxy.commandPath, Equals, exporterConfig.Command)
 
 	ctx := context.Background()
 	tctx, cancelFn := context.WithTimeout(ctx, time.Second)
@@ -98,17 +98,17 @@ func (s *ExecProxySuite) TestExecProxyWithBrokenScript(c *C) {
 }
 
 func (s *ExecProxySuite) TestExecProxyWithNeverendingScript(c *C) {
-	config := s.initProxyScript(c, brokenStalledExecProxyScript)
-	defer os.Remove(config.Command)
+	exporterConfig := s.initProxyScript(c, brokenStalledExecProxyScript)
+	defer os.Remove(exporterConfig.Command)
 
-	cmdFile, rerr := ioutil.ReadFile(config.Command)
+	cmdFile, rerr := ioutil.ReadFile(exporterConfig.Command)
 	c.Assert(rerr, IsNil)
 
-	execProxy := newExecProxy(&config)
+	execProxy := newExecProxy(&exporterConfig)
 	c.Assert(execProxy, Not(IsNil))
 	c.Check(execProxy.log, Not(IsNil))
-	c.Check(execProxy.arguments, DeepEquals, config.Args)
-	c.Check(execProxy.commandPath, Equals, config.Command)
+	c.Check(execProxy.arguments, DeepEquals, exporterConfig.Args)
+	c.Check(execProxy.commandPath, Equals, exporterConfig.Command)
 
 	ctx := context.Background()
 	tctx, cancelFn := context.WithTimeout(ctx, time.Second)
@@ -119,17 +119,17 @@ func (s *ExecProxySuite) TestExecProxyWithNeverendingScript(c *C) {
 }
 
 func (s *ExecProxySuite) TestExecProxyQueuesCorrectly(c *C) {
-	config := s.initProxyScript(c, brokenStalledExecProxyScript)
-	defer os.Remove(config.Command)
+	exporterConfig := s.initProxyScript(c, brokenStalledExecProxyScript)
+	defer os.Remove(exporterConfig.Command)
 
-	cmdFile, rerr := ioutil.ReadFile(config.Command)
+	cmdFile, rerr := ioutil.ReadFile(exporterConfig.Command)
 	c.Assert(rerr, IsNil)
 
-	execProxy := newExecProxy(&config)
+	execProxy := newExecProxy(&exporterConfig)
 	c.Assert(execProxy, Not(IsNil))
 	c.Check(execProxy.log, Not(IsNil))
-	c.Check(execProxy.arguments, DeepEquals, config.Args)
-	c.Check(execProxy.commandPath, Equals, config.Command)
+	c.Check(execProxy.arguments, DeepEquals, exporterConfig.Args)
+	c.Check(execProxy.commandPath, Equals, exporterConfig.Command)
 
 	// Make a bunch of contexts
 	//ctxs := []context.Context{}
