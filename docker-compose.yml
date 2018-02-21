@@ -1,0 +1,15 @@
+version: '2'
+
+services:
+  reverse_exporter:
+    build: .
+    ports:
+    - 127.0.0.1:9998:9998
+    
+  prometheus:
+    image: quay.io/prometheus/prometheus
+  
+  node_exporter:
+    image: quay.io/prometheus/node-exporter
+    privileged: true
+    
