@@ -19,6 +19,8 @@ test_metric_two{arg1="$1",arg2="$2"} 12345
 EOF
 `
 
+var _ = Suite(&ExecProxySuite{})
+
 const brokenExecProxyScript = `#!/bin/bash
 exit 1
 `
