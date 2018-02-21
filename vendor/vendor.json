@@ -33,6 +33,12 @@
 			"revisionTime": "2016-08-04T10:47:26Z"
 		},
 		{
+			"checksumSHA1": "5rPfda8jFccr3A6heL+JAmi9K9g=",
+			"path": "github.com/davecgh/go-spew/spew",
+			"revision": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d",
+			"revisionTime": "2015-11-05T21:09:06Z"
+		},
+		{
 			"checksumSHA1": "ndnAFCfsGC3upNQ6jAEwzxcurww=",
 			"path": "github.com/docker/docker/pkg/longpath",
 			"revision": "5f8a0ceeda003df141ab462a8ad20dad4f5b5fe4",
@@ -85,6 +91,12 @@
 			"path": "github.com/moby/moby/pkg/ioutils",
 			"revision": "bdd9668b489c65eb1ef7272d38ad877ffda2041c",
 			"revisionTime": "2017-11-30T03:24:58Z"
+		},
+		{
+			"checksumSHA1": "zKKp5SZ3d3ycKe4EKMNT0BqAWBw=",
+			"path": "github.com/pmezard/go-difflib/difflib",
+			"revision": "d8ed2627bdf02c080bf22230dbb337003b7aba2d",
+			"revisionTime": "2015-10-28T09:42:44Z"
 		},
 		{
 			"checksumSHA1": "hu0MsbTdFzZxNRyAxe2HmTFFFak=",
@@ -211,6 +223,12 @@
 			"path": "gopkg.in/alecthomas/kingpin.v2",
 			"revision": "8cccfa8eb2e3183254457fb1749b2667fbc364c7",
 			"revisionTime": "2016-02-17T09:03:01Z"
+		},
+		{
+			"checksumSHA1": "UD3Xnjdx6vWSFVmKUopMjuTwuz0=",
+			"path": "gopkg.in/check.v1",
+			"revision": "11d3bc7aa68e238947792f30573146a3231fc0f1",
+			"revisionTime": "2015-07-29T08:04:31Z"
 		},
 		{
 			"checksumSHA1": "fRgp9UZPllOlkPssv7frzQx4z9A=",
