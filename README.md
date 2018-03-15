@@ -40,3 +40,8 @@ Browse to [http://127.0.0.1:9998/metrics] to view the results.
 See `example.config.yml` for a config file including all parameters used in
 some way.
 
+## Building
+
+Build system is based on Mage. Simply run `go run mage.go` to invoke
+the magefile.
+
