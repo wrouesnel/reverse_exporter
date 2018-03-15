@@ -3,6 +3,7 @@ version: '2'
 services:
   reverse_exporter:
     build: .
+    command: --log.level=debug
     ports:
     - 127.0.0.1:9998:9998
     
