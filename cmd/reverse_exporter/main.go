@@ -14,7 +14,7 @@ import (
 	"github.com/wrouesnel/reverse_exporter/api"
 	"github.com/wrouesnel/reverse_exporter/api/apisettings"
 	"github.com/wrouesnel/reverse_exporter/config"
-	"github.com/wrouesnel/reverse_exporter/metricProxy"
+	"github.com/wrouesnel/reverse_exporter/metricproxy"
 	"github.com/wrouesnel/reverse_exporter/version"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -65,7 +65,7 @@ func realMain(appConfig AppConfig) int {
 			return 1
 		}
 
-		proxyHandler, perr := metricProxy.NewMetricReverseProxy(rp)
+		proxyHandler, perr := metricproxy.NewMetricReverseProxy(rp)
 		if perr != nil {
 			log.Errorln("Error initializing reverse proxy for path:", rp.Path)
 			return 1

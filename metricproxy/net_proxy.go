@@ -1,4 +1,4 @@
-package metricProxy
+package metricproxy
 
 import (
 	"context"

@@ -13,7 +13,7 @@ deploy:
   api_key:
     secure: Tl1TFQ/UsI09l9MNgSUlnDZEC4C+wakZsrvcH6W81qrBn9lIvhOEmwc2TU/B2L2liXrezIAUvHTc9iHSRkumlD/6OwVQx1IdHkqGPTX4ZFvyfVi/coTXNDq92gG9pSB6jRPyaFjzID1hjXhHLzp3IEWQlIAvkkbftcxxlTShm9z6NuVz0UbuPt5SB5g30zQfujTBs6sIy9WYW472ORORx5cZ7+/quzJIg6ir9s66aVuj/nN0rvTxlZIrvLsGUv+lup0uWfiC0M+yVb9JKZBL7uCnzKWPXxPixR6cejnz1ogKO97fJnI/jYJhLP976CrkF1URHlMubQtyuRdGQ5XeD6/BRcqEGVya5RTQ7IAFT/mTWpmJ9AQJDvr2X/KNWK8nvLJuxkAxIqswOwo8zUn3fIs0q4YtWIr/ysw0S55uhRqplIevfR5SWZ+DxtdsxwGZWgc9Nq3rOpgnXutnfUINVFqj7aZV1lHa/Xuzdq35eIKupRDzkcgixJdB3Wq6SNCp/SmLOi7MYU7gytInyjb8S4rZZsaeSUhLkLjmbnU3fwfOW11mHVdu10fw18t57SLxgX7iN0CkxQteVP1zqyJKW4z69eYqimSt6d8MJTRYg/CtHCeXYQhvG8y4MyunOFORqXpo4UbGTcMYQO8R9mc0MlSd1a9X6JQYemXncvhH7iU=
   file_glob: true
-  file: release/*.tar.gz
+  file: release/*
   on:
     tags: true
     branch: master
