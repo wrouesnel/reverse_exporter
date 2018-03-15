@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "This is a slow endpoint"
+echo "This is a slow endpoint" 1>&2
 sleep 3
 
 cat << EOF
