@@ -118,8 +118,9 @@ func NewMetricReverseProxy(exporter config.ReverseExporter) (http.Handler, error
 		provider := auth.HtpasswdFileProvider(exporter.HtPasswdFile)
 		authenticator := auth.NewBasicAuthenticator(authRealm, provider)
 
+		realHandler := backend.handler
 		authHandler := func(w http.ResponseWriter, r *auth.AuthenticatedRequest) {
-			backend.handler(w, &r.Request)
+			realHandler(w, &r.Request)
 		}
 		backend.handler = authenticator.Wrap(authHandler)
 
