@@ -4,10 +4,9 @@ cache:
   - tools/bin
   - tools/pkg
 go:
-- '1.9'
+- '1.10'
 script:
-- make all
-- make release
+- go run mage.go -v all
 - tools/bin/goveralls -coverprofile=cover.out -service=travis-ci
 deploy:
   provider: releases
