@@ -42,6 +42,8 @@ some way.
 
 ## Building
 
-Build system is based on Mage. Simply run `go run mage.go` to invoke
-the magefile.
+The build system is based on [Mage](https://magefile.org/). Simply run
+`go run mage.go` to invoke the magefile.
 
+`go run mage.go binary` will build a binary for your current platform.
+`go run mage.go release` builds release binaries.
