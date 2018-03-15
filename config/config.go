@@ -4,6 +4,8 @@ import (
 	"errors"
 	"io/ioutil"
 
+	"time"
+
 	"github.com/prometheus/common/model"
 	"gopkg.in/yaml.v2"
 )
@@ -15,6 +17,11 @@ import (
 var (
 	ErrInvalidExportersConfig = errors.New("exporters key is not in the known format")
 	ErrUnknownExporterType    = errors.New("unknown exporter type specified")
+)
+
+var (
+	// DefaultNetTimeout is the default timeout set for remote network exporters.
+	DefaultNetTimeout = model.Duration(time.Second * 1)
 )
 
 // Load parses the given string as a YAML ExporterConfig
@@ -60,7 +67,7 @@ const (
 type ExporterConfig struct {
 	ReverseExporters []ReverseExporter `yaml:"reverse_exporters"`
 	// Catch-all to error on invalid config
-	XXX map[string]interface{} `yaml:",inline,omit_empty"`
+	XXX map[string]interface{} `yaml:",inline,omitempty"`
 }
 
 // ReverseExporter is a configuration struct describing a logically-decoded proxied exporter
@@ -224,7 +231,7 @@ type HTTPExporterConfig struct {
 	Address string `yaml:"address"`
 	// Timeout is the maximum length of time connecting to and retrieving the
 	// results of this exporter can take.
-	Timeout model.Duration `yaml:"timeout"`
+	Timeout model.Duration `yaml:"timeout,omitempty"`
 	// ForwardURLParams determines whether the exporter will have ALL url params
 	// of the parent request added to it.
 	ForwardURLParams bool `yaml:"forward_url_params"`
@@ -234,5 +241,8 @@ type HTTPExporterConfig struct {
 // UnmarshalYAML implements yaml.Unmarshaller
 func (hec *HTTPExporterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type plain HTTPExporterConfig
+
+	hec.Timeout = DefaultNetTimeout
+
 	return unmarshal((*plain)(hec))
 }
