@@ -303,10 +303,10 @@
 			"revisionTime": "2017-07-27T02:59:21Z"
 		},
 		{
-			"checksumSHA1": "W4d2+9V0nun0stHD1t/PK180q4E=",
+			"checksumSHA1": "uhbsSBiZliUQNSdyfOz+H8A7ZxM=",
 			"path": "github.com/wrouesnel/multihttp",
-			"revision": "5ed2c5618426c352ea85b027f34fc5880e270695",
-			"revisionTime": "2017-09-06T15:20:33Z"
+			"revision": "05a42d2dc5b3906244c900cfba17dc61511eb926",
+			"revisionTime": "2018-03-15T16:06:01Z"
 		},
 		{
 			"checksumSHA1": "oCH3J96RWvO8W4xjix47PModpio=",

@@ -10,8 +10,9 @@ import (
 	//"fmt"
 	"crypto/x509"
 	"errors"
-	"github.com/hashicorp/errwrap"
 	"io/ioutil"
+
+	"github.com/hashicorp/errwrap"
 )
 
 const (
@@ -101,7 +102,7 @@ func ParseAddress(address string) (ListenAddressConfig, error) {
 		if caCertPath := queryParams.Get(caCertParam); caCertPath != "" {
 			tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
 
-			// Require acceptable clientCAs to be explicitely specified.
+			// Require acceptable clientCAs to be explicitly specified.
 			caCerts, caerr := ioutil.ReadFile(caCertPath)
 			if caerr != nil {
 				return retAddr, errwrap.Wrap(ErrErrorLoadingClientCACertificate, caerr)
@@ -112,6 +113,7 @@ func ParseAddress(address string) (ListenAddressConfig, error) {
 
 			tlsConfig.ClientCAs = caCertPool
 		}
+		retAddr.TLSConfig = tlsConfig
 	default:
 		return retAddr, ErrUnknownListenScheme
 	}
