@@ -17,30 +17,36 @@ package rules
 import (
 	"go/ast"
 
-	gas "github.com/GoASTScanner/gas/core"
+	"github.com/GoASTScanner/gas"
 )
 
-type WeakRand struct {
+type weakRand struct {
 	gas.MetaData
 	funcNames   []string
 	packagePath string
 }
 
-func (w *WeakRand) Match(n ast.Node, c *gas.Context) (*gas.Issue, error) {
+func (w *weakRand) ID() string {
+	return w.MetaData.ID
+}
+
+func (w *weakRand) Match(n ast.Node, c *gas.Context) (*gas.Issue, error) {
 	for _, funcName := range w.funcNames {
 		if _, matched := gas.MatchCallByPackage(n, c, w.packagePath, funcName); matched {
-			return gas.NewIssue(c, n, w.What, w.Severity, w.Confidence), nil
+			return gas.NewIssue(c, n, w.ID(), w.What, w.Severity, w.Confidence), nil
 		}
 	}
 
 	return nil, nil
 }
 
-func NewWeakRandCheck(conf map[string]interface{}) (gas.Rule, []ast.Node) {
-	return &WeakRand{
+// NewWeakRandCheck detects the use of random number generator that isn't cryptographically secure
+func NewWeakRandCheck(id string, conf gas.Config) (gas.Rule, []ast.Node) {
+	return &weakRand{
 		funcNames:   []string{"Read", "Int"},
 		packagePath: "math/rand",
 		MetaData: gas.MetaData{
+			ID:         id,
 			Severity:   gas.High,
 			Confidence: gas.Medium,
 			What:       "Use of weak random number generator (math/rand instead of crypto/rand)",

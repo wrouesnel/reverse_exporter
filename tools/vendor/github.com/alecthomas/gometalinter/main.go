@@ -24,7 +24,11 @@ var (
 		{"gopkg.in", "alecthomas", "gometalinter.v2", "_linters"},
 	}
 	defaultConfigPath = ".gometalinter.json"
-	Version           = "master"
+
+	// Populated by goreleaser.
+	version = "master"
+	commit  = "?"
+	date    = ""
 )
 
 func setupFlags(app *kingpin.Application) {
@@ -141,7 +145,9 @@ type debugFunction func(format string, args ...interface{})
 
 func debug(format string, args ...interface{}) {
 	if config.Debug {
-		fmt.Fprintf(os.Stderr, "DEBUG: "+format+"\n", args...)
+		t := time.Now().UTC()
+		fmt.Fprintf(os.Stderr, "DEBUG: [%s] ", t.Format(time.StampMilli))
+		fmt.Fprintf(os.Stderr, format+"\n", args...)
 	}
 }
 
@@ -177,7 +183,7 @@ func formatSeverity() string {
 }
 
 func main() {
-	kingpin.Version(Version)
+	kingpin.Version(fmt.Sprintf("gometalinter version %s built from %s on %s", version, commit, date))
 	pathsArg := kingpin.Arg("path", "Directories to lint. Defaults to \".\". <path>/... will recurse.").Strings()
 	app := kingpin.CommandLine
 	app.Action(loadDefaultConfig)
@@ -240,15 +246,6 @@ func processConfig(config *Config) (include *regexp.Regexp, exclude *regexp.Rege
 	// Reduced (user) linting time on kingpin from 0.97s to 0.64s.
 	if !config.EnableGC {
 		_ = os.Setenv("GOGC", "off")
-	}
-	if config.VendoredLinters && config.Install && config.Update {
-		warning(`Linters are now vendored by default, --update ignored. The original
-behaviour can be re-enabled with --no-vendored-linters.
-
-To request an update for a vendored linter file an issue at:
-https://github.com/alecthomas/gometalinter/issues/new
-`)
-		config.Update = false
 	}
 	// Force sorting by path if checkstyle mode is selected
 	// !jsonFlag check is required to handle:
@@ -484,6 +481,14 @@ func addGoBinsToPath(gopaths []string) []string {
 // configureEnvironmentForInstall sets GOPATH and GOBIN so that vendored linters
 // can be installed
 func configureEnvironmentForInstall() {
+	if config.Update {
+		warning(`Linters are now vendored by default, --update ignored. The original
+behaviour can be re-enabled with --no-vendored-linters.
+
+To request an update for a vendored linter file an issue at:
+https://github.com/alecthomas/gometalinter/issues/new
+`)
+	}
 	gopaths := getGoPathList()
 	vendorRoot := findVendoredLinters()
 	if vendorRoot == "" {
