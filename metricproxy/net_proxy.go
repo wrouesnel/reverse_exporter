@@ -74,11 +74,18 @@ func scrape(ctx context.Context, deadline time.Duration, address string, values 
 		req.URL.RawQuery = values.Encode()
 	}
 
-	// Derive a new context with a deadline
-	childCtx, cancelFn := context.WithTimeout(ctx, deadline)
-	defer cancelFn()
+	// If a non-zero deadline is specificed, derive a new context - otherwise just
+	// pass the reaquest deadline through.
+	var proxyCtx context.Context
+	if deadline != 0 {
+		childCtx, cancelFn := context.WithTimeout(ctx, deadline)
+		defer cancelFn()
+		proxyCtx = childCtx
+	} else {
+		proxyCtx = ctx
+	}
 
-	resp, err := ctxhttp.Do(childCtx, http.DefaultClient, req)
+	resp, err := ctxhttp.Do(proxyCtx, http.DefaultClient, req)
 	if err != nil {
 		return nil, err
 	}
