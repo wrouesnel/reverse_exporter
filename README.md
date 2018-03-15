@@ -33,7 +33,7 @@ Run `docker-compose up` in the root of the repository to build and start a
 `reverse_exporter` combining the metrics of a Prometheus instance with a
 `node_exporter`.
 
-Browse to [http://127.0.0.1:9998/metrics] to view the results.
+Browse to http://127.0.0.1:9998/metrics to view the results.
 
 ## Usage
 
