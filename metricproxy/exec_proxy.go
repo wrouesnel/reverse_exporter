@@ -163,7 +163,8 @@ func (ep *execProxy) execer() {
 		go func(done *bool, doneCh chan<- struct{}) {
 			ep.scrapeEventCond.L.Lock()
 			// Watch for number of waiting scrapes to fall to 0
-			for len(ep.waitingScrapes) != 0 || *done {
+			for len(ep.waitingScrapes) != 0 && !*done {
+				ep.log.Debugf("%v waiting scrapers", len(ep.waitingScrapes))
 				ep.scrapeEventCond.Wait()
 			}
 			cancelFn()
@@ -344,7 +345,7 @@ func (ecp *execCachingProxy) Scrape(ctx context.Context, values url.Values) ([]*
 
 	select {
 	case <-ecp.resultReadyCh:
-		log.Debugln("Returning cached results fo scrape")
+		log.Debugln("Returning cached results of scrape")
 	case <-ctx.Done():
 		// context cancelled before scrape finished
 		rerr = ErrScrapeTimeoutBeforeExecFinished
