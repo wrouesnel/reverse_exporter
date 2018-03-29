@@ -26,6 +26,8 @@ tl;dr It's how you get `/metrics` to work with a fat container.
 * Support intelligent on-scrape dynamic metrics from scripts 
   (multiple scrapes are queued to single script execution preventing overloading)
 * Support periodic (cron-like) dynamic metrics from scripts
+* TLS support.
+* Authentication support via HTTP basic auth and/or TLS client-certificates.
 
 ## Quick Start
 
