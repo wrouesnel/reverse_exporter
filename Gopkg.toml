@@ -26,10 +26,6 @@
 
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/wrouesnel/multihttp"
-
-[[constraint]]
   name = "gopkg.in/alecthomas/kingpin.v2"
   version = "2.1.11"
 
