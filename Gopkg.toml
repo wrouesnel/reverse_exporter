@@ -38,3 +38,6 @@
   version = "18.09"
   source = "https://github.com/docker/engine.git"
 
+[[constraint]]
+  branch = "master"
+  name = "github.com/prometheus/client_golang"

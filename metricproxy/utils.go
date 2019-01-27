@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/common/model"
@@ -64,7 +63,7 @@ func rewriteMetrics(labels model.LabelSet, mfs []*dto.MetricFamily) {
 					Value: proto.String(string(v)),
 				})
 			}
-			sort.Sort(prometheus.LabelPairSorter(outputPairs))
+			sort.Sort(labelPairSorter(outputPairs))
 			// Replace the metrics labels with the given output pairs
 			m.Label = outputPairs
 		}
@@ -128,4 +127,20 @@ func getBuf() *bytes.Buffer {
 func giveBuf(buf *bytes.Buffer) {
 	buf.Reset()
 	bufPool.Put(buf)
+}
+
+// labelPairSorter implements sort.Interface. It is used to sort a slice of
+// dto.LabelPair pointers.
+type labelPairSorter []*dto.LabelPair
+
+func (s labelPairSorter) Len() int {
+	return len(s)
+}
+
+func (s labelPairSorter) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s labelPairSorter) Less(i, j int) bool {
+	return s[i].GetName() < s[j].GetName()
 }
