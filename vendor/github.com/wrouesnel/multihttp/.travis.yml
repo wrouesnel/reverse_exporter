@@ -1,0 +1,10 @@
+language: go
+go:
+- '1.9'
+cache:
+  directories:
+  - tools/bin
+script:
+- go get -v .
+- CONCURRENT_LINTERS=1 LINTER_DEADLINE=180s make all
+- tools/bin/goveralls -coverprofile=cover.out -service=travis-ci

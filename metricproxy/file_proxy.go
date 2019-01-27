@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/docker/docker/pkg/ioutils"
 	"github.com/hashicorp/errwrap"
-	"github.com/moby/moby/pkg/ioutils"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/common/log"
