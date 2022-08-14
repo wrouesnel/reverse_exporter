@@ -1,0 +1,41 @@
+module github.com/wrouesnel/reverse_exporter
+
+go 1.18
+
+require (
+	github.com/abbot/go-http-auth v0.4.1-0.20170919225621-b6a92f468f2b
+	github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc
+	github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf
+	github.com/beorn7/perks v0.0.0-20160804104726-4c0e84591b9a
+	github.com/davecgh/go-spew v0.0.0-20151105211317-5215b55f46b2
+	github.com/docker/docker v1.4.2-0.20160316133514-5f8a0ceeda00
+	github.com/dsnet/compress v0.0.0-20171208185109-cc9eb1d7ad76
+	github.com/eknkc/amber v0.0.0-20171010120322-cdade1c07385
+	github.com/elazarl/go-bindata-assetfs v1.0.0
+	github.com/golang/protobuf v0.0.0-20171113180720-1e59b77b52bf
+	github.com/golang/snappy v0.0.0-20170215233205-553a64147049
+	github.com/hashicorp/errwrap v0.0.0-20141028054710-7554cd9344ce
+	github.com/julienschmidt/httprouter v1.1.1-0.20171027133709-e1b9828bc9e5
+	github.com/magefile/mage v1.0.3-0.20180212162426-81dbe7074be5
+	github.com/matttproud/golang_protobuf_extensions v1.0.1
+	github.com/mholt/archiver v2.0.1-0.20171012052341-26cf5bb32d07+incompatible
+	github.com/moby/moby v1.4.2-0.20171130032458-bdd9668b489c
+	github.com/nwaples/rardecode v0.0.0-20171029023500-e06696f847ae
+	github.com/pierrec/lz4 v1.0.2-0.20180113151703-ed8d4cc3b461
+	github.com/pierrec/xxHash v0.0.0-20170714082455-a0006b13c722
+	github.com/pmezard/go-difflib v0.0.0-20151028094244-d8ed2627bdf0
+	github.com/prometheus/client_golang v0.9.0-pre1.0.20171120174506-1cdba8fdde81
+	github.com/prometheus/client_model v0.0.0-20171117100541-99fa1f4be8e5
+	github.com/prometheus/common v0.0.0-20171117163051-2e54d0b93cba
+	github.com/prometheus/procfs v0.0.0-20171017214025-a6e9df898b13
+	github.com/sirupsen/logrus v1.0.4-0.20171118124223-95cd2b9c79aa
+	github.com/ulikunitz/xz v0.5.4
+	github.com/wrouesnel/go.log v0.0.0-20170727025921-a5061e9da6f1
+	github.com/wrouesnel/multihttp v0.0.0-20180315214121-05a42d2dc5b3
+	golang.org/x/crypto v0.0.0-20171128194009-94eea52f7b74
+	golang.org/x/net v0.0.0-20171129192339-a8b929477797
+	golang.org/x/sys v0.0.0-20171130013927-13fcbd661c8e
+	gopkg.in/alecthomas/kingpin.v2 v2.1.11
+	gopkg.in/check.v1 v1.0.0-20150729080431-11d3bc7aa68e
+	gopkg.in/yaml.v2 v2.0.0-20171116090243-287cf08546ab
+)
