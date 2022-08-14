@@ -1,1 +1,2 @@
+# This default configuration file is included in the docker container.
 reverse_exporters: []

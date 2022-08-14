@@ -3,7 +3,7 @@ package config_test
 import (
 	"encoding/base64"
 
-	"github.com/wrouesnel/poller_exporter/pkg/config"
+	"github.com/wrouesnel/reverse_exporter/pkg/config"
 	. "gopkg.in/check.v1"
 )
 

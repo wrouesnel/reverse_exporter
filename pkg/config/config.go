@@ -1,13 +1,9 @@
 package config
 
 import (
-	"errors"
-	"io/ioutil"
-
-	"time"
-
+	"github.com/pkg/errors"
 	"github.com/prometheus/common/model"
-	"gopkg.in/yaml.v2"
+	"github.com/samber/lo"
 )
 
 // TODO: error if a user tries to override this with labels
@@ -19,147 +15,72 @@ var (
 	ErrUnknownExporterType    = errors.New("unknown exporter type specified")
 )
 
-var (
-	// DefaultNetTimeout is the default timeout set for remote network exporters.
-	DefaultNetTimeout = model.Duration(time.Second * 1)
-)
-
-// Load parses the given string as a YAML ExporterConfig
-func Load(s string) (*ExporterConfig, error) {
-	cfg := new(ExporterConfig)
-
-	// Important: we treat the yaml file as a big list, and unmarshal to our
-	// big list here.
-	err := yaml.Unmarshal([]byte(s), cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return cfg, nil
+// Config is the main application configuration structure
+type Config struct {
+	Web              *WebConfig               `mapstructure:"web,omitempty"`
+	ExporterDefaults *ExporterDefaults        `mapstructure:"exporter_defaults,omitempty"`
+	ReverseExporters []*ReverseExporterConfig `mapstructure:"reverse_exporters,omitempty"`
 }
 
-// LoadFromFile loads an ExporterConfig from the given filepath
-func LoadFromFile(filename string) (*ExporterConfig, error) {
-	content, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-	return Load(string(content))
+// BasicAuthConfig defines basic authentication credentials to accept on the web interface.
+// If Password is not set, then the credential set is ignored. The password is plaintext.
+type BasicAuthConfig struct {
+	Username string `mapstructure:"username,omitempty"` // Username to accept
+	Password string `mapstructure:"password,omitempty"` // Plain text password to accept
 }
 
-// Save dumps an ExporterConfig as a YAML file.
-func Save(cfg *ExporterConfig) ([]byte, error) {
-	out, err := yaml.Marshal(cfg)
-	return out, err
+//type JWTTokenAuthConfig struct {
+//	Secret    string `mapstructure:"secret"`    // JWT secret suitable for algorithm
+//	Algorithm string `mapstructure:"algorithm"` // Algorithm to use
+//	ID        string `mapstructure:"id"`        // ID for the token provider
+//}
+
+// AuthConfig holds the configuration of any authentication put on the exporter interface.
+type AuthConfig struct {
+	BasicAuthCredentials []BasicAuthConfig `mapstructure:"basic_auth,omitempty"`
+	//JWTToken             []JWTTokenAuthConfig `mapstructure:"jwt_auth,omitempty"`
 }
 
-// AuthType is one of several constants used to specify the type of authentication a reverse
-// proxy endpoint should have. The default empty string means no auth.
-type AuthType string
-
-// nolint: golint
-const (
-	AuthTypeNone  AuthType = ""      // no authentication
-	AuthTypeBasic AuthType = "basic" // basic authentication
-)
-
-// ExporterConfig is the global configuration.
-type ExporterConfig struct {
-	ReverseExporters []ReverseExporter `yaml:"reverse_exporters"`
-	// Catch-all to error on invalid config
-	XXX map[string]interface{} `yaml:",inline,omitempty"`
+// WebConfig holds global configuration for the exporters webserver.
+type WebConfig struct {
+	ContextPath       string         `mapstructure:"context_path,omitempty"`
+	ReadHeaderTimeout model.Duration `mapstructure:"read_header_timeout,omitempty"`
+	Listen            []URL          `mapstructure:"listen,omitempty"`
 }
 
-// ReverseExporter is a configuration struct describing a logically-decoded proxied exporter
-type ReverseExporter struct {
+// ReverseExporterConfig is a configuration struct describing a logically-decoded proxied exporter
+type ReverseExporterConfig struct {
 	// Path is the URL path this set of exporters will be found under.
-	Path string `yaml:"path"`
+	Path string `mapstructure:"path"`
+	// Auth is the auth to request for this path
+	Auth *AuthConfig `mapstructure:"auth,omitempty"`
 	// Exporters is a list of URLs defining exporter endpoints to be aggregated
 	// and the unique name to be given to differentiate their metrics.
-	Exporters []interface{} `yaml:"exporters"`
-	// AuthType is the type of authentication backend to use for this reverse
-	// proxy. Currently only nothing and "basic" are supported.
-	AuthType AuthType `yaml:"auth_type"`
-	// HtPasswdFile is the HtPasswd file to use for basic auth if basic auth is
-	// requested.
-	HtPasswdFile string `yaml:"htpasswd_file"`
+	Exporters *ExportersConfig `mapstructure:"exporters"`
 }
 
-// UnmarshalYAML implements yaml.Unmarshaller
-func (re *ReverseExporter) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	// Unmarshal most of the config naturally
-	type plain ReverseExporter
-	err := unmarshal((*plain)(re))
-	if err != nil {
-		return err
-	}
+type ExporterDefaults struct {
+	HTTPDefaults       *HTTPExporterConfig        `mapstructure:"http"`
+	FileDefaults       *FileExporterConfig        `mapstructure:"file"`
+	ExecDefaults       *ExecExporterConfig        `mapstructure:"exec"`
+	ExecCachedDefaults *ExecCachingExporterConfig `mapstructure:"exec_cached"`
+}
 
-	// Post-process the exporters section
-	for idx, rawExporter := range re.Exporters {
-		exporterMap, ok := rawExporter.(map[interface{}]interface{})
+// ExportersConfig is the internal mapping the exporter config representation
+type ExportersConfig struct {
+	HTTPExporters       []*HTTPExporterConfig        `mapstructure:"http"`
+	FileExporters       []*FileExporterConfig        `mapstructure:"file"`
+	ExecExporters       []*ExecExporterConfig        `mapstructure:"exec"`
+	ExecCachedExporters []*ExecCachingExporterConfig `mapstructure:"exec_cached"`
+}
 
-		if len(exporterMap) > 1 || !ok || len(exporterMap) == 0 {
-			return ErrInvalidExportersConfig
-		}
-
-		var exporterType string
-		var exporterConfig interface{}
-		for k, v := range exporterMap {
-			s, ok := k.(string)
-			if !ok {
-				return ErrInvalidExportersConfig
-			}
-			exporterType = s
-			exporterConfig = v
-			break
-		}
-
-		// Remarshal the exporter config to YAML so it can be decoded explicitly
-		// into a config object below.
-		exporterConfigYAML, yerr := yaml.Marshal(exporterConfig)
-		if yerr != nil {
-			return yerr
-		}
-
-		var parsedConfig interface{}
-
-		switch exporterType {
-		case "file":
-			config := FileExporterConfig{}
-			perr := yaml.Unmarshal(exporterConfigYAML, &config)
-			if perr != nil {
-				return perr
-			}
-			parsedConfig = config
-		case "exec":
-			config := ExecExporterConfig{}
-			perr := yaml.Unmarshal(exporterConfigYAML, &config)
-			if perr != nil {
-				return perr
-			}
-			parsedConfig = config
-		case "exec-cached":
-			config := ExecCachingExporterConfig{}
-			perr := yaml.Unmarshal(exporterConfigYAML, &config)
-			if perr != nil {
-				return perr
-			}
-			parsedConfig = config
-		case "http":
-			config := HTTPExporterConfig{}
-			perr := yaml.Unmarshal(exporterConfigYAML, &config)
-			if perr != nil {
-				return perr
-			}
-			parsedConfig = config
-		default:
-			return ErrUnknownExporterType
-		}
-
-		re.Exporters[idx] = parsedConfig
-	}
-
-	return nil
+func (ex *ExportersConfig) All() []BaseExporter {
+	exporters := make([]BaseExporter, 0)
+	exporters = append(exporters, lo.Map(ex.HTTPExporters, func(v *HTTPExporterConfig, _ int) BaseExporter { return BaseExporter(v) })...)
+	exporters = append(exporters, lo.Map(ex.FileExporters, func(v *FileExporterConfig, _ int) BaseExporter { return BaseExporter(v) })...)
+	exporters = append(exporters, lo.Map(ex.ExecExporters, func(v *ExecExporterConfig, _ int) BaseExporter { return BaseExporter(v) })...)
+	exporters = append(exporters, lo.Map(ex.ExecCachedExporters, func(v *ExecCachingExporterConfig, _ int) BaseExporter { return BaseExporter(v) })...)
+	return exporters
 }
 
 // BaseExporter is the interface all exporters must implement
@@ -170,11 +91,11 @@ type BaseExporter interface {
 // Exporter implements BaseExporter
 type Exporter struct {
 	// Name is the name of the underlying exporter which will be appended to the metrics
-	Name string `yaml:"name"`
+	Name string `mapstructure:"name"`
 	// NoRewrite disables appending of the name (explicit labels will be appended however)
-	NoRewrite bool `yaml:"no_rewrite"`
+	NoRewrite bool `mapstructure:"no_rewrite"`
 	// Labels are additional key-value labels which should be statically added to all metrics
-	Labels map[string]string `yaml:"labels"`
+	Labels map[string]string `mapstructure:"labels"`
 }
 
 // GetBaseExporter returns the common exporter parameters of an exporter
@@ -185,64 +106,38 @@ func (e Exporter) GetBaseExporter() Exporter {
 
 // FileExporterConfig contains configuration specific to reverse proxying files
 type FileExporterConfig struct {
-	Path     string `yaml:"path"`
-	Exporter `yaml:",inline"`
-}
-
-// UnmarshalYAML implements yaml.Unmarshaller
-func (fec *FileExporterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	type plain FileExporterConfig
-	return unmarshal((*plain)(fec))
+	Exporter `mapstructure:",squash"`
+	Path     string `mapstructure:"path"`
 }
 
 // ExecExporterConfig contains configuration specific to reverse proxying executable scripts
 type ExecExporterConfig struct {
-	Command  string   `yaml:"command"`
-	Args     []string `yaml:"args"`
-	Exporter `yaml:",inline"`
-}
-
-// UnmarshalYAML implements yaml.Unmarshaller
-func (eec *ExecExporterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	type plain ExecExporterConfig
-	return unmarshal((*plain)(eec))
+	Exporter `mapstructure:",squash"`
+	Command  string   `mapstructure:"command"`
+	Args     []string `mapstructure:"args"`
 }
 
 // ExecCachingExporterConfig contains configuration specific to reverse proxying cached executable scripts
 type ExecCachingExporterConfig struct {
-	Command      string         `yaml:"command"`
-	Args         []string       `yaml:"args"`
-	ExecInterval model.Duration `yaml:"exec_interval"`
-	Exporter     `yaml:",inline"`
-	//ExecExporterConfig `yaml:",inline"`
-}
+	Exporter     `mapstructure:",squash"`
+	Command      string         `mapstructure:"command"`
+	Args         []string       `mapstructure:"args"`
+	ExecInterval model.Duration `mapstructure:"exec_interval"`
 
-// UnmarshalYAML implements yaml.Unmarshaller
-func (ecec *ExecCachingExporterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	type plain ExecCachingExporterConfig
-	return unmarshal((*plain)(ecec))
+	//ExecExporterConfig `mapstructure:",inline"`
 }
 
 // HTTPExporterConfig contains configuration specific to reverse proxying normal http-based Prometheus exporters
 type HTTPExporterConfig struct {
+	Exporter `mapstructure:",squash"`
 	// A URI giving the address the exporter is found at.
 	// HTTP: http://localhost/metrics
 	// Unix: http://unix:/path/to/socket:/metrics
-	Address string `yaml:"address"`
+	Address string `mapstructure:"address"`
 	// Timeout is the maximum length of time connecting to and retrieving the
 	// results of this exporter can take.
-	Timeout model.Duration `yaml:"timeout,omitempty"`
+	Timeout model.Duration `mapstructure:"timeout,omitempty"`
 	// ForwardURLParams determines whether the exporter will have ALL url params
 	// of the parent request added to it.
-	ForwardURLParams bool `yaml:"forward_url_params"`
-	Exporter         `yaml:",inline"`
-}
-
-// UnmarshalYAML implements yaml.Unmarshaller
-func (hec *HTTPExporterConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	type plain HTTPExporterConfig
-
-	hec.Timeout = DefaultNetTimeout
-
-	return unmarshal((*plain)(hec))
+	ForwardURLParams bool `mapstructure:"forward_url_params"`
 }

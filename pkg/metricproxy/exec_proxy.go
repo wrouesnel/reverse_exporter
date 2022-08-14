@@ -3,6 +3,7 @@ package metricproxy
 import (
 	"context"
 	"errors"
+	"github.com/wrouesnel/reverse_exporter/pkg/config"
 	"net/url"
 	"os/exec"
 	"sync"
@@ -10,8 +11,6 @@ import (
 
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
-	"github.com/wrouesnel/reverse_exporter/config"
-
 	log "github.com/prometheus/common/log"
 )
 

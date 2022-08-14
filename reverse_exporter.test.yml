@@ -1,41 +1,40 @@
 reverse_exporters:
 - path: /metrics
   exporters:
-  - http:
-      address: http://prometheus:9090/metrics
+    http:
+    - address: http://prometheus:9090/metrics
       name: prometheus
-  - http:
-      address: http://node_exporter:9100/metrics
+    - address: http://node_exporter:9100/metrics
       name: node_exporter
 
 # The same metrics but password protected (username and password is
 # reverse_exporter/reverse_exporter or reverse_exporter2/reverse_exporter
 - path: /secret-metrics
-  auth_type: basic
-  htpasswd_file: example.htpasswd
+  auth:
+    basic_auth:
+      - user: will
+        password: password
   exporters:
-  - http:
-      address: http://prometheus:9090/metrics
+    http:
+    - address: http://prometheus:9090/metrics
       name: prometheus
-  - http:
-      address: http://node_exporter:9100/metrics
+    - address: http://node_exporter:9100/metrics
       name: node_exporter
 
 - path: /file-endpoint
   exporters:
-  - file:
-      name: cron_metrics
+    file:
+    - name: cron_metrics
       path: example.metrics.prom
 
 - path: /dynamic-endpoint
   exporters:
-  - exec:
-      name: dynamic_metrics
-
+    exec:
+    - name: dynamic_metrics
       command: ./scripted_metrics.sh
       args: ["arg1", "arg2"]
-  - exec-cached:
-      name: periodic_dynamic_metrics
+    exec-cached:
+    - name: periodic_dynamic_metrics
       command: ./slow_scripted_metrics.sh
       args: []
       # interval to execute the script over

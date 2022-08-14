@@ -2,38 +2,20 @@
 # This file should not normally used this way - specific only what you need.
 
 web:
-  # path Prometheus metrics are exposed under
-  telemetry_path: /metrics
   # timeout to receive headers from connections - prevent Slow Loris
   read_header_timeout: 1s
   # list of addresses to listen on
   listen:
     # open a Unix socket file on /var/run/server
     - unix:///var/run/server.socket
-    # listen on tcp port 9115.
-    - tcp://0.0.0.0:9115
-    # listen on port 9115 with TLS
-    - tcps://0.0.0.0:9115?tlscert=/path/to/file/in/pem/format.crt&tlskey=/path/to/file/in/pem/format.pem
+    # listen on tcp port 9998.
+    - tcp://0.0.0.0:9998
+    # listen on port 9998 with TLS
+    - tcps://0.0.0.0:9998?tlscert=/path/to/file/in/pem/format.crt&tlskey=/path/to/file/in/pem/format.pem
     # listen on Unix socket file on /var/run/server with TLS
     - unixs:///var/run/server.socket?tlscert=/path/to/file/in/pem/format.crt&tlskey=/path/to/file/in/pem/format.pem
-    # listen on 9115 with TLS and TLS client auth
-    - tcps://0.0.0.0:9115?tlscert=/path/to/file/in/pem/format.crt&tlskey=/path/to/file/in/pem/format.pem&tlsclientca=/path/to/cert
-
-  auth:
-    # if specific then HTTP basic authentication is enabled on the web interface
-    # and metrics endpoint.
-    basic_auth:
-      # usernames may be duplicated, which will declare multiple passwords.
-      # multiple usernames may also be specified
-      - username: admin
-        password: my-pass
-web:
-  telemetry_path: /metrics
-  read_header_timeout: 1s
-  listen:
-    - tcp://[::]:9115
-  auth:
-    basic_auth: []
+    # listen on 9998 with TLS and TLS client auth
+    - tcps://0.0.0.0:9998?tlscert=/path/to/file/in/pem/format.crt&tlskey=/path/to/file/in/pem/format.pem&tlsclientca=/path/to/cert
 
 # Each item in the list is the name of a url subpath to combine exporters under.
 reverse_exporters:
@@ -42,11 +24,13 @@ reverse_exporters:
 # exporters.
 - path: /metrics
   # auth_type configures password protection on the endpoint
-  auth_type: basic
-  htpasswd_file: example.htpasswd
+  auth:
+    basic_auth:
+      - username: root
+        password: test
   exporters:
-  - http:
-      name: prometheus
+    http:
+    - name: prometheus
       address: http://127.0.0.1:9090/metrics
       # proxy_timeout sets the TCP deadline for a request to complete. No data
       # is returned by an endpoint until all exporters have received data, so keep
@@ -54,48 +38,46 @@ reverse_exporters:
       # a value of 0 means no timeout (the request can potentially stall until the
       # client terminates, which Prometheus will do by default).
       timeout: 1s
-  - http:
-      address: http://127.0.0.1:9100/metrics
+    - address: http://127.0.0.1:9100/metrics
       name: node_exporter
       # labels is a map of additional static labels to add (in addition to the
       # enforced "name" field)
       labels:
         node_uuid: some.special.identifier
-
-- path: /blackbox
-  exporters:
-  - http:
-      name: blackbox_exporter
-      address: http://127.0.0.1:9115/probe
-      # disable appending the name (above) to the exporter. Important: if you end
-      # up combining multiple metrics with undistinguished names, the endpoint
-      # will disable itself.
-      no_rewrite: true
-
-# metrics from jobs inside a container can be easily included provided they are
-# in the text exposition format. Just path a file URI as the address.
-- path: /file-endpoint
-  exporters:
-  - file:
-      name: cron_metrics
+    # metrics from jobs inside a container can be easily included provided they are
+    # in the text exposition format. Just path a file URI as the address.
+    file:
+    - name: cron_metrics
       path: example.metrics.prom
-
-
-# an executable script can also be passed with a special `exec` URL. exec proxy's have two modes:
-# in non-caching mode, the proxy runs an instance of the script as soon as a request is received,
-# and buffers up additional requests - returning the result data to all of them once execution is
-# finished. Only a single instance is ever executing.
-# In caching mode, the command is executed continuously with a given timeout, and cached results
-# are served to Prometheus instances. Your script should probably include a timestamp in this mode.
-- path: /dynamic_endpoint
-  exporters:
-  - exec:
-      name: dynamic_metrics
+    # an executable script can also be passed with a special `exec` URL. exec proxy's have two modes:
+    # in non-caching mode, the proxy runs an instance of the script as soon as a request is received,
+    # and buffers up additional requests - returning the result data to all of them once execution is
+    # finished. Only a single instance is ever executing.
+    exec:
+    - name: dynamic_metrics
       command: ./scripted_metrics.sh
       args: ["arg1", "arg2"]
-  - exec-cached:
-      name: periodic_dynamic_metrics
+    # In caching mode, the command is executed continuously with a given timeout, and cached results
+    # are served to Prometheus instances. Your script should probably include a timestamp in this mode.
+    exec_cached:
+    - name: periodic_dynamic_metrics
       command: ./scripted_metrics.sh
       args: []
       # interval to execute the script over
       exec_interval: 30s
+
+# The exporter does support declaring arbitrary paths, for example if you were
+# fronting something like the blackbox_exporter which changes its return based
+# on the Prometheus query string.
+- path: /blackbox
+  exporters:
+    http:
+    - name: blackbox_exporter
+      address: http://127.0.0.1:9998/probe
+      # disable appending the name (above) to the exporter. Important: if you end
+      # up combining multiple metrics with undistinguished names, the endpoint
+      # will disable itself.
+      no_rewrite: true
+      # ForwardURLParams determines whether the exporter will have ALL url params
+      # of the parent request added to it.
+      forward_url_params: true

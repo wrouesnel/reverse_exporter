@@ -3,11 +3,11 @@ package metricproxy
 import (
 	"context"
 	"fmt"
+	"github.com/wrouesnel/reverse_exporter/pkg/config"
 	"io/ioutil"
 	"os"
 	"time"
 
-	"github.com/wrouesnel/reverse_exporter/config"
 	. "gopkg.in/check.v1"
 )
 

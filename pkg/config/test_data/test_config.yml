@@ -1,0 +1,56 @@
+web:
+  # timeout to receive headers from connections - prevent Slow Loris
+  read_header_timeout: 1s
+  # list of addresses to listen on
+  listen:
+    # open a Unix socket file on /var/run/server
+    - unix:///var/run/server.socket
+    # listen on tcp port 9115.
+    - tcp://1.2.3.4:9115
+    # listen on port 9115 with TLS
+    - tcps://99.89.89.89:9115?tlscert=/path/to/file/in/pem/format.crt&tlskey=/path/to/file/in/pem/format.pem
+    # listen on Unix socket file on /var/run/server with TLS
+    - unixs:///var/run/server.socket?tlscert=/path/to/file/in/pem/format.crt&tlskey=/path/to/file/in/pem/format.pem
+    # listen on 9115 with TLS and TLS client auth
+    - tcps://0.0.0.0:9115?tlscert=/path/to/file/in/pem/format.crt&tlskey=/path/to/file/in/pem/format.pem&tlsclientca=/path/to/cert
+
+reverse_exporters:
+- path: /metrics
+  auth:
+    basic_auth:
+      - username: root
+        password: test
+  exporters:
+    http:
+      - name: prometheus
+        address: http://127.0.0.1:9090/metrics
+        timeout: 5s
+      - address: http://127.0.0.1:9100/metrics
+        name: node_exporter
+        labels:
+          node_uuid: some.special.identifier
+- path: /blackbox
+  exporters:
+    http:
+    - name: blackbox_exporter
+      address: http://127.0.0.1:9115/probe
+      no_rewrite: true
+
+- path: /file-endpoint
+  exporters:
+    file:
+    - name: cron_metrics
+      path: example.metrics.prom
+
+- path: /dynamic_endpoint
+  exporters:
+    exec:
+    - name: dynamic_metrics
+      command: ./scripted_metrics.sh
+      args: ["arg1", "arg2"]
+    exec_cached:
+    - name: periodic_dynamic_metrics
+      command: ./scripted_metrics.sh
+      args: []
+      # interval to execute the script over
+      exec_interval: 30s

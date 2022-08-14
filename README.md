@@ -1,6 +1,8 @@
-[![Build Status](https://travis-ci.org/wrouesnel/reverse_exporter.svg?branch=master)](https://travis-ci.org/wrouesnel/reverse_exporter)
-[![Coverage Status](https://coveralls.io/repos/github/wrouesnel/reverse_exporter/badge.svg?branch=master)](https://coveralls.io/github/wrouesnel/reverse_exporter?branch=master)
-[![Go Report Card](https://goreportcard.com/badge/github.com/wrouesnel/reverse_exporter)](https://goreportcard.com/report/github.com/wrouesnel/reverse_exporter)
+[![Build and Test](https://github.com/wrouesnel/reverse_exporter/actions/workflows/integration.yml/badge.svg)](https://github.com/wrouesnel/reverse_exporter/actions/workflows/integration.yml)
+[![Release](https://github.com/wrouesnel/reverse_exporter/actions/workflows/release.yml/badge.svg)](https://github.com/wrouesnel/reverse_exporter/actions/workflows/release.yml)
+[![Container Build](https://github.com/wrouesnel/reverse_exporter/actions/workflows/container.yml/badge.svg)](https://github.com/wrouesnel/reverse_exporter/actions/workflows/container.yml)
+[![Coverage Status](https://coveralls.io/repos/github/wrouesnel/reverse_exporter/badge.svg?branch=main)](https://coveralls.io/github/wrouesnel/reverse_exporter?branch=main)
+r)
 
 # Reverse Prometheus Exporter
 
@@ -42,10 +44,9 @@ Browse to http://127.0.0.1:9998/metrics to view the results.
 See `example.config.yml` for a config file including all parameters used in
 some way.
 
-## Building
+# Hacking
 
-The build system is based on [Mage](https://magefile.org/). Simply run
-`go run mage.go` to invoke the magefile.
+To get started with the repository run `go run mage.go autogen` to configure
+your repositories build hooks.
 
-`go run mage.go binary` will build a binary for your current platform.
-`go run mage.go release` builds release binaries.
+To build a binary for your current platform run `go run mage.go binary`

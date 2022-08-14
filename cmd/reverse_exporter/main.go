@@ -1,73 +1,118 @@
 package main
 
 import (
+	"context"
+	"github.com/samber/lo"
+	"github.com/wrouesnel/reverse_exporter/pkg/config"
+	"github.com/wrouesnel/reverse_exporter/pkg/metricproxy"
+	"github.com/wrouesnel/reverse_exporter/version"
+	"go.uber.org/zap/zapcore"
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/prometheus/common/log"
 	"github.com/wrouesnel/multihttp"
 
+	"github.com/alecthomas/kong"
 	"github.com/wrouesnel/reverse_exporter/api"
 	"github.com/wrouesnel/reverse_exporter/api/apisettings"
-	"github.com/wrouesnel/reverse_exporter/config"
-	"github.com/wrouesnel/reverse_exporter/metricproxy"
-	"github.com/wrouesnel/reverse_exporter/version"
-	"gopkg.in/alecthomas/kingpin.v2"
+
+	"go.uber.org/zap"
 )
 
-// AppConfig represents the total command line application configuration which is
-// applied at startup.
-type AppConfig struct {
-	ConfigFile string
-	//MetricsPath string
+//nolint:gochecknoglobals
+var CLI struct {
+	Version   kong.VersionFlag `help:"Show version number"`
+	LogLevel  string           `help:"Logging Level" enum:"debug,info,warning,error" default:"info"`
+	LogFormat string           `help:"Logging format" enum:"console,json" default:"console"`
 
-	ContextPath string
-	StaticProxy string
-
-	ListenAddrs string
-
-	PrintVersion bool
+	ConfigFile string `help:"File to load poller config from" default:"reverse_exporter.yml"`
 }
 
-func realMain(appConfig AppConfig) int {
-	apiConfig := apisettings.APISettings{}
-	apiConfig.ContextPath = appConfig.ContextPath
+func main() {
+	os.Exit(cmdMain(os.Args[1:]))
+}
 
-	if appConfig.ConfigFile == "" {
-		log.Errorln("No app config specified.")
-		return 1
-	}
-
-	reverseConfig, err := config.LoadFromFile(appConfig.ConfigFile)
+func cmdMain(args []string) int {
+	vars := kong.Vars{}
+	vars["version"] = version.Version
+	kongParser, err := kong.New(&CLI, vars)
 	if err != nil {
-		log.Errorln("Could not parse configuration file:", err)
+		panic(err)
+	}
+
+	_, err = kongParser.Parse(args)
+	kongParser.FatalIfErrorf(err)
+
+	// Configure logging
+	logConfig := zap.NewProductionConfig()
+	logConfig.Encoding = CLI.LogFormat
+	var logLevel zapcore.Level
+	if err := logLevel.UnmarshalText([]byte(CLI.LogLevel)); err != nil {
+		panic(err)
+	}
+	logConfig.Level = zap.NewAtomicLevelAt(logLevel)
+
+	log, err := logConfig.Build()
+	if err != nil {
+		panic(err)
+	}
+
+	// Replace the global logger to enable logging
+	zap.ReplaceGlobals(log)
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	ctx, cancelFn := context.WithCancel(context.Background())
+	go func() {
+		sig := <-sigCh
+		log.Info("Caught signal - exiting", zap.String("signal", sig.String()))
+		cancelFn()
+	}()
+
+	appLog := log.With(zap.String("config_file", CLI.ConfigFile))
+
+	cfg, err := config.LoadFromFile(CLI.ConfigFile)
+	if err != nil {
+		log.Error("Could not parse configuration file:", zap.Error(err))
 		return 1
 	}
+
+	return realMain(appLog, ctx, cfg)
+}
+
+func realMain(l *zap.Logger, ctx context.Context, cfg *config.Config) int {
+	if cfg == nil {
+		l.Error("No config specified - shutting down")
+		return 1
+	}
+
+	apiConfig := apisettings.APISettings{}
+	apiConfig.ContextPath = cfg.Web.ContextPath
 
 	// Setup the web UI
 	router := httprouter.New()
 	router = api.NewAPIv1(apiConfig, router)
 
-	log.Debugln("Begin initializing reverse proxy backends")
+	l.Debug("Begin initializing reverse proxy backends")
 	initializedPaths := make(map[string]http.Handler)
-	for _, rp := range reverseConfig.ReverseExporters {
+	for _, rp := range cfg.ReverseExporters {
+		rl := l.With(zap.String("path", rp.Path))
 		if rp.Path == "" {
-			log.Errorln("Blank exporter paths are not allowed.")
+			rl.Error("Blank exporter paths are not allowed.")
 			return 1
 		}
 
 		if _, found := initializedPaths[rp.Path]; found {
-			log.Errorln("Exporter paths must be unique. %s already exists.", rp.Path)
+			rl.Error("Exporter paths must be unique. %s already exists.")
 			return 1
 		}
 
 		proxyHandler, perr := metricproxy.NewMetricReverseProxy(rp)
 		if perr != nil {
-			log.Errorln("Error initializing reverse proxy for path:", rp.Path)
+			rl.Error("Error initializing reverse proxy for path")
 			return 1
 		}
 
@@ -75,67 +120,39 @@ func realMain(appConfig AppConfig) int {
 
 		initializedPaths[rp.Path] = proxyHandler
 	}
-	log.Debugln("Finished initializing reverse proxy backends")
-	log.With("num_reverse_endpoints", len(reverseConfig.ReverseExporters)).Infoln("Initialized backends")
+	l.Debug("Finished initializing reverse proxy backends")
+	l.Info("Initializsed backends")
 
-	log.Infoln("Starting HTTP server")
-	listenAddrs := strings.Split(appConfig.ListenAddrs, ",")
-
-	listeners, listenerErrs, err := multihttp.Listen(listenAddrs, router)
-	defer func() {
-		for _, l := range listeners {
-			if cerr := l.Close(); cerr != nil {
-				log.Errorln("Error while closing listeners (ignored):", cerr)
-			}
-		}
-	}()
-	if err != nil {
-		log.Errorln("Startup failed for a listener:", err)
-		return 1
-	}
-	for _, addr := range listenAddrs {
-		log.Infoln("Listening on", addr)
+	l.Info("Starting HTTP server")
+	webCtx, webCancel := context.WithCancel(ctx)
+	listeners, errCh, listenerErr := multihttp.Listen(lo.Map(cfg.Web.Listen, func(t config.URL, _ int) string {
+		return t.String()
+	}), router)
+	if listenerErr != nil {
+		l.Error("Error setting up listeners", zap.Error(listenerErr))
+		webCancel()
 	}
 
-	// Setup handlers to catch the listener termination statuses.
+	// Log errors from the listener
 	go func() {
-		for listenerErr := range listenerErrs {
-			log.Errorln("Listener Error:", listenerErr.Error)
+		listenerErrInfo := <-errCh
+		// On the first error, cancel the webCtx to shutdown
+		webCancel()
+		for {
+			l.Error("Error from listener",
+				zap.Error(listenerErrInfo.Error),
+				zap.String("listener_addr", listenerErrInfo.Listener.Addr().String()))
+			// Keep receiving the rest of the errors so we can log them
+			listenerErrInfo = <-errCh
 		}
 	}()
-
-	// Setup signal wait for shutdown
-	shutdownCh := make(chan os.Signal, 1)
-	signal.Notify(shutdownCh, syscall.SIGINT, syscall.SIGTERM)
-
-	// If a listener fails while it's listening, we'd like to panic and shutdown
-	// since it shouldn't really happen.
-	select {
-	case sig := <-shutdownCh:
-		log.Infoln("Terminating on signal:", sig)
-		return 0
-	case listenerErr := <-listenerErrs:
-		log.Errorln("Terminating due to listener shutdown:", listenerErr.Error)
-		return 1
+	<-webCtx.Done()
+	for _, listener := range listeners {
+		if err := listener.Close(); err != nil {
+			l.Warn("Error closing listener during shutdown", zap.Error(err))
+		}
 	}
-}
 
-func main() {
-	appConfig := AppConfig{}
-
-	app := kingpin.New("reverse_exporter", "Logical-decoding Prometheus exporter reverse proxy")
-
-	app.Flag("config.file", "Path to the configuration file").
-		Default("reverse_exporter.yml").StringVar(&appConfig.ConfigFile)
-	app.Flag("http.context-path", "Context-path to be globally applied to the configured proxies").
-		StringVar(&appConfig.ContextPath)
-	app.Flag("http.listen-addrs", "Comma-separated list of listen address configurations").
-		Default("tcp://0.0.0.0:9998").StringVar(&appConfig.ListenAddrs)
-	app.Version(version.Version)
-
-	log.AddFlags(app)
-
-	kingpin.MustParse(app.Parse(os.Args[1:]))
-
-	os.Exit(realMain(appConfig))
+	l.Info("Exiting")
+	return 0
 }

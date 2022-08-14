@@ -1,0 +1,12 @@
+# This is the default configuration of the exporter and is baked into the
+# executable at build time. It configures the default values for all parameters.
+web:
+  read_header_timeout: 1s
+  listen:
+    - tcp://[::]:9998
+
+exporter_defaults:
+  http:
+    timeout: 1s
+
+reverse_exporters: []

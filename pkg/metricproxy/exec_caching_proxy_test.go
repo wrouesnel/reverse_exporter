@@ -3,13 +3,13 @@ package metricproxy
 import (
 	"context"
 	"fmt"
+	"github.com/wrouesnel/reverse_exporter/pkg/config"
 	"io/ioutil"
 	"os"
 	"time"
 
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/model"
-	"github.com/wrouesnel/reverse_exporter/config"
 	. "gopkg.in/check.v1"
 )
 

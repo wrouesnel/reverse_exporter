@@ -2,6 +2,7 @@ package metricproxy
 
 import (
 	"context"
+	"github.com/wrouesnel/reverse_exporter/pkg/config"
 	"net/url"
 	"os"
 
@@ -10,7 +11,6 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/common/log"
-	"github.com/wrouesnel/reverse_exporter/config"
 )
 
 // ensure fileProxy implements MetricProxy

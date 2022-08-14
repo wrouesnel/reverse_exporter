@@ -3,17 +3,16 @@ package metricproxy
 import (
 	"context"
 	"errors"
+	"github.com/wrouesnel/reverse_exporter/pkg/config"
+	"go.uber.org/zap"
 	"net/url"
 
 	"github.com/prometheus/common/model"
-	"github.com/wrouesnel/reverse_exporter/config"
-
 	"net/http"
 	"time"
 
 	"github.com/abbot/go-http-auth"
 	dto "github.com/prometheus/client_model/go"
-	log "github.com/prometheus/common/log"
 )
 
 // nolint: golint
@@ -31,8 +30,8 @@ type MetricProxy interface {
 }
 
 // NewMetricReverseProxy initializes a new reverse proxy from the given configuration.
-func NewMetricReverseProxy(exporter config.ReverseExporter) (http.Handler, error) {
-	log := log.With("path", exporter.Path) // nolint: vetshadow
+func NewMetricReverseProxy(exporter *config.ReverseExporterConfig) (http.Handler, error) {
+	log := zap.L().With(zap.String("path", exporter.Path))
 
 	// Initialize a basic reverse proxy
 	backend := &ReverseProxyEndpoint{
