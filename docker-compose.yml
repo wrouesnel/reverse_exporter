@@ -3,9 +3,11 @@ version: '2'
 services:
   reverse_exporter:
     build: .
-    command: --log.level=debug
+    command: --log-level=debug
     ports:
     - 127.0.0.1:9998:9998
+    volumes:
+      - ./reverse_exporter.compose.yml:/config/reverse_exporter.yml
     
   prometheus:
     image: quay.io/prometheus/prometheus

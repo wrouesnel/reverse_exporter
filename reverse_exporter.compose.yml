@@ -1,0 +1,8 @@
+reverse_exporters:
+- path: /metrics
+  exporters:
+    http:
+    - address: http://prometheus:9090/metrics
+      name: prometheus
+    - address: http://node_exporter:9100/metrics
+      name: node_exporter
