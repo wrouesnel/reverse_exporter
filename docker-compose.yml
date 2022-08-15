@@ -3,7 +3,7 @@ version: '2'
 services:
   reverse_exporter:
     build: .
-    command: --log-level=debug
+    command: --log-level=debug --config-file=/config/reverse_exporter.yml
     ports:
     - 127.0.0.1:9998:9998
     volumes:

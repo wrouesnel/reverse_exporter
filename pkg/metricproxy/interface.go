@@ -55,16 +55,16 @@ func NewMetricReverseProxy(reverseExporter *config.ReverseExporterConfig) (http.
 
 		//nolint:varnamelen
 		switch e := exporter.(type) {
-		case config.FileExporterConfig:
+		case *config.FileExporterConfig:
 			eLog.Debug("Adding new file reverseExporter proxy")
-			newExporter = newFileProxy(&e)
-		case config.ExecExporterConfig:
+			newExporter = newFileProxy(e)
+		case *config.ExecExporterConfig:
 			eLog.Debug("Adding new exec reverseExporter proxy")
-			newExporter = newExecProxy(&e)
-		case config.ExecCachingExporterConfig:
+			newExporter = newExecProxy(e)
+		case *config.ExecCachingExporterConfig:
 			eLog.Debug("Adding new caching exec reverseExporter proxy")
-			newExporter = newExecCachingProxy(&e)
-		case config.HTTPExporterConfig:
+			newExporter = newExecCachingProxy(e)
+		case *config.HTTPExporterConfig:
 			eLog.Debug("Adding new http reverseExporter proxy")
 			newExporter = &netProxy{
 				address:            e.Address,
