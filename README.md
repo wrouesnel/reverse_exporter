@@ -34,12 +34,6 @@ exporters export their own process information as a part of their metrics).
 
 tl;dr It's how you get `/metrics` to work with a fat container.
 
-## Usage
-
-```bash
-
-```
-
 # Notable Functionality
 
 * Combine and merge multiple exporters into a single `/metrics` endpoint
