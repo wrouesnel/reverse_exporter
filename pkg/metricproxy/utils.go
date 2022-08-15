@@ -1,6 +1,7 @@
 package metricproxy
 
 import (
+	"github.com/wrouesnel/reverse_exporter/pkg/promutil"
 	"io"
 	"sort"
 
@@ -10,8 +11,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/common/model"
@@ -58,13 +57,16 @@ func rewriteMetrics(labels model.LabelSet, mfs []*dto.MetricFamily) {
 			// Convert the label set back to labelPairs and attach to the Metric
 			outputPairs := make([]*dto.LabelPair, 0)
 			for n, v := range outputSet {
+				name := new(string)
+				value := new(string)
+				*name = string(n)
+				*value = string(v)
 				outputPairs = append(outputPairs, &dto.LabelPair{
-					// Note: could probably drop the function call and just pass a pointer
-					Name:  proto.String(string(n)),
-					Value: proto.String(string(v)),
+					Name:  name,
+					Value: value,
 				})
 			}
-			sort.Sort(prometheus.LabelPairSorter(outputPairs))
+			sort.Sort(promutil.LabelPairSorter(outputPairs))
 			// Replace the metrics labels with the given output pairs
 			m.Label = outputPairs
 		}

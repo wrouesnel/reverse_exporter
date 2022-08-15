@@ -3,6 +3,7 @@ package metricproxy
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"net/http"
 	"net/url"
 	"sync"
@@ -11,7 +12,6 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/wrouesnel/reverse_exporter/version"
-	"golang.org/x/net/context/ctxhttp"
 )
 
 const (
@@ -37,6 +37,7 @@ type netProxy struct {
 	address            string
 	deadline           time.Duration
 	forwardQueryParams bool
+	log                *zap.Logger
 }
 
 // Scrape scrapes the underlying metric endpoint. values are URL parameters
@@ -60,7 +61,7 @@ func (mrp *netProxy) Scrape(ctx context.Context, values url.Values) ([]*dto.Metr
 
 // scrape decodes MetricFamily's from the wire format, and returns them ready to be proxied.
 func scrape(ctx context.Context, deadline time.Duration, address string, values url.Values) ([]*dto.MetricFamily, error) { // nolint: lll
-	req, err := http.NewRequest("GET", address, nil)
+	req, err := http.NewRequest(http.MethodGet, address, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +76,7 @@ func scrape(ctx context.Context, deadline time.Duration, address string, values 
 	}
 
 	// If a non-zero deadline is specificed, derive a new context - otherwise just
-	// pass the reaquest deadline through.
+	// pass the request deadline through.
 	var proxyCtx context.Context
 	if deadline != 0 {
 		childCtx, cancelFn := context.WithTimeout(ctx, deadline)
@@ -85,7 +86,7 @@ func scrape(ctx context.Context, deadline time.Duration, address string, values 
 		proxyCtx = ctx
 	}
 
-	resp, err := ctxhttp.Do(proxyCtx, http.DefaultClient, req)
+	resp, err := http.DefaultClient.Do(req.WithContext(proxyCtx))
 	if err != nil {
 		return nil, err
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/wrouesnel/reverse_exporter/pkg/config"
+	"go.uber.org/zap"
 	"net/url"
 	"os/exec"
 	"sync"
@@ -11,7 +12,6 @@ import (
 
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
-	log "github.com/prometheus/common/log"
 )
 
 // ensure fileProxy implements MetricProxy
@@ -40,7 +40,7 @@ type execProxy struct {
 	drainMtx *sync.Mutex
 	// shouldScrapeCond is signalled whenever scrapes enter or leave
 	scrapeEventCond *sync.Cond
-	log             log.Logger
+	log             *zap.Logger
 }
 
 // execCachingProxy implements a caching proxy for metrics produced by a periodically executed script.
@@ -54,7 +54,7 @@ type execCachingProxy struct {
 	resultReadyCh <-chan struct{}
 	lastResultMtx *sync.RWMutex
 
-	log log.Logger
+	log *zap.Logger
 }
 
 // newExecProxy initializes a new execProxy and its goroutines.
@@ -65,7 +65,7 @@ func newExecProxy(config *config.ExecExporterConfig) *execProxy {
 		waitingScrapes:  map[<-chan *execProxyScrapeResult]chan<- *execProxyScrapeResult{},
 		drainMtx:        &sync.Mutex{},
 		scrapeEventCond: sync.NewCond(&sync.Mutex{}),
-		log:             log.Base(),
+		log:             zap.L(),
 	}
 
 	go newProxy.execer()
@@ -81,22 +81,21 @@ func (ep *execProxy) doExec(ctx context.Context) *execProxyScrapeResult {
 		err: nil,
 	}
 
-	ep.log.Debugln("Executing metric script")
+	ep.log.Debug("Executing metric script")
 	// Have at least 1 listener, start executing.
 
 	cmd := exec.Command(ep.commandPath, ep.arguments...) // nolint: gas
 	outRdr, perr := cmd.StdoutPipe()
 	if perr != nil {
 		result.err = perr
-		ep.log.With("error", perr.Error()).
-			Errorln("Error opening stdout pipe to metric script")
+		ep.log.
+			Error("Error opening stdout pipe to metric script", zap.Error(perr))
 		return result
 	}
 
 	if err := cmd.Start(); err != nil {
 		result.err = err
-		ep.log.With("error", err.Error()).
-			Errorln("Error starting metric script")
+		ep.log.Error("Error starting metric script", zap.Error(err))
 		return result
 	}
 
@@ -107,10 +106,10 @@ func (ep *execProxy) doExec(ctx context.Context) *execProxyScrapeResult {
 	go func() {
 		select {
 		case <-ctx.Done():
-			ep.log.Infoln("Context done (no more scapers) - killing subprocess.")
+			ep.log.Info("Context done (no more scapers) - killing subprocess.")
 			err := cmd.Process.Kill()
 			if err != nil {
-				ep.log.Errorln("Error during subprocess kill:", err.Error())
+				ep.log.Error("Error during subprocess kill", zap.Error(err))
 			}
 		case <-finished:
 			// Cancel the context listen
@@ -122,19 +121,17 @@ func (ep *execProxy) doExec(ctx context.Context) *execProxyScrapeResult {
 
 	// Wait for the process to exit.
 	werr := cmd.Wait()
-	ep.log.Debugln("Subprocess finished.")
+	ep.log.Debug("Subprocess finished.")
 	close(finished) // Disable the watchdog above
 	if werr != nil {
 		result.err = werr
-		ep.log.With("error", werr.Error()).
-			Errorln("Metric script exited with error")
+		ep.log.Error("Metric script exited with error", zap.Error(werr))
 		return result
 	}
 
 	if derr != nil {
 		result.err = derr
-		ep.log.With("error", derr.Error()).
-			Errorln("Metric decoding from script output failed")
+		ep.log.Error("Metric decoding from script output failed", zap.Error(derr))
 		return result
 	}
 	result.mfs = mfs
@@ -142,7 +139,7 @@ func (ep *execProxy) doExec(ctx context.Context) *execProxyScrapeResult {
 }
 
 func (ep *execProxy) execer() {
-	ep.log.Debugln("ExecProxy started")
+	ep.log.Debug("ExecProxy started")
 
 	for {
 		ep.scrapeEventCond.L.Lock()
@@ -163,14 +160,14 @@ func (ep *execProxy) execer() {
 			ep.scrapeEventCond.L.Lock()
 			// Watch for number of waiting scrapes to fall to 0
 			for len(ep.waitingScrapes) != 0 && !*done {
-				ep.log.Debugf("%v waiting scrapers", len(ep.waitingScrapes))
+				ep.log.Debug("Waiting scrapers", zap.Int("waiting_scrapers", len(ep.waitingScrapes)))
 				ep.scrapeEventCond.Wait()
 			}
 			cancelFn()
 			if *done {
-				ep.log.Debugln("Watcher exiting after successful execution.")
+				ep.log.Debug("Watcher exiting after successful execution.")
 			} else {
-				ep.log.Debugln("No more listeners, watcher requested subprocess exit")
+				ep.log.Debug("No more listeners, watcher requested subprocess exit")
 			}
 			ep.scrapeEventCond.L.Unlock()
 			close(doneCh)
@@ -186,7 +183,7 @@ func (ep *execProxy) execer() {
 		// Dispatch results
 		ep.scrapeEventCond.L.Lock()
 
-		ep.log.Debugln("Emitting results to remaining scrapers")
+		ep.log.Debug("Emitting results to remaining scrapers")
 		for _, outCh := range ep.waitingScrapes {
 			outCh <- results
 		}
@@ -194,7 +191,7 @@ func (ep *execProxy) execer() {
 		*done = true
 
 		// Order is important here - lock drainMtx to block new scrapers
-		ep.log.Debugln("Waiting for scrapers to finish")
+		ep.log.Debug("Waiting for scrapers to finish")
 		ep.drainMtx.Lock()
 		ep.scrapeEventCond.L.Unlock()
 
@@ -253,10 +250,10 @@ func (ep *execProxy) Scrape(ctx context.Context, values url.Values) ([]*dto.Metr
 	// Wait for results or for our context to finish
 	select {
 	case results := <-waitCh:
-		ep.log.Debugln("Scraper exiting with results")
+		ep.log.Debug("Scraper exiting with results")
 		return results.mfs, results.err
 	case <-ctx.Done():
-		ep.log.Debugln("Scraper exiting due to context finished")
+		ep.log.Debug("Scraper exiting due to context finished")
 		return nil, ErrScrapeTimeoutBeforeExecFinished
 	}
 }
@@ -274,7 +271,7 @@ func newExecCachingProxy(config *config.ExecCachingExporterConfig) *execCachingP
 		resultReadyCh: rdyCh,
 		lastResultMtx: &sync.RWMutex{},
 
-		log: log.Base(),
+		log: zap.L(),
 	}
 
 	go newProxy.execer(rdyCh)
@@ -283,27 +280,24 @@ func newExecCachingProxy(config *config.ExecCachingExporterConfig) *execCachingP
 }
 
 func (ecp *execCachingProxy) execer(rdyCh chan<- struct{}) {
-	ecp.log.Debugln("ExecCachingProxy started")
+	ecp.log.Debug("ExecCachingProxy started")
 
 	for {
 		nextExec := ecp.lastExec.Add(ecp.execInterval)
-		ecp.log.With("next_exec", nextExec.String()).
-			Debugln("Waiting for next interval")
+		ecp.log.Debug("Waiting for next interval", zap.Time("next_exec", nextExec))
 		<-time.After(time.Until(nextExec))
-		ecp.log.Debugln("Executing metric script on timeout")
+		ecp.log.Debug("Executing metric script on timeout")
 
 		ecp.lastExec = time.Now()
 		cmd := exec.Command(ecp.commandPath, ecp.arguments...) // nolint: gas
 		outRdr, perr := cmd.StdoutPipe()
 		if perr != nil {
-			ecp.log.With("error", perr.Error()).
-				Errorln("Error opening stdout pipe to metric script")
+			ecp.log.Error("Error opening stdout pipe to metric script", zap.Error(perr))
 			continue
 		}
 
 		if err := cmd.Start(); err != nil {
-			ecp.log.With("error", err.Error()).
-				Errorln("Error starting metric script")
+			ecp.log.Error("Error starting metric script", zap.Error(err))
 			continue
 		}
 
@@ -317,12 +311,11 @@ func (ecp *execCachingProxy) execer(rdyCh chan<- struct{}) {
 		// Hard kill the script once metric decoding finishes. It's the only way to be sure.
 		// Maybe sigterm with a timeout?
 		if err := cmd.Process.Kill(); err != nil {
-			ecp.log.With("error", derr.Error()).
-				Errorln("Error sending kill signal to subprocess")
+			ecp.log.
+				Error("Error sending kill signal to subprocess", zap.Error(derr))
 		}
 		if derr != nil {
-			ecp.log.With("error", derr.Error()).
-				Errorln("Metric decoding from script output failed")
+			ecp.log.Error("Metric decoding from script output failed", zap.Error(derr))
 			continue
 		}
 
@@ -344,7 +337,7 @@ func (ecp *execCachingProxy) Scrape(ctx context.Context, values url.Values) ([]*
 
 	select {
 	case <-ecp.resultReadyCh:
-		log.Debugln("Returning cached results of scrape")
+		zap.L().Debug("Returning cached results of scrape")
 	case <-ctx.Done():
 		// context cancelled before scrape finished
 		rerr = ErrScrapeTimeoutBeforeExecFinished

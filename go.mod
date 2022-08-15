@@ -3,7 +3,6 @@ module github.com/wrouesnel/reverse_exporter
 go 1.18
 
 require (
-	github.com/abbot/go-http-auth v0.4.1-0.20170919225621-b6a92f468f2b
 	github.com/alecthomas/kong v0.6.1
 	github.com/davecgh/go-spew v1.1.1
 	github.com/golang/protobuf v1.5.2
@@ -20,18 +19,16 @@ require (
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.37.0
 	github.com/samber/lo v1.27.0
+	github.com/shaj13/go-guardian/v2 v2.11.5
 	github.com/wrouesnel/multihttp v0.0.0-20180315214121-05a42d2dc5b3
 	go.uber.org/zap v1.22.0
-	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
-	github.com/alecthomas/assert v1.0.0 // indirect
-	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
-	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/docker/docker v1.4.2-0.20160316133514-5f8a0ceeda00 // indirect
 	github.com/dsnet/compress v0.0.0-20171208185109-cc9eb1d7ad76 // indirect
 	github.com/golang/snappy v0.0.0-20170215233205-553a64147049 // indirect
@@ -42,15 +39,11 @@ require (
 	github.com/pierrec/lz4 v1.0.2-0.20180113151703-ed8d4cc3b461 // indirect
 	github.com/pierrec/xxHash v0.0.0-20170714082455-a0006b13c722 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
-	github.com/sirupsen/logrus v1.6.0 // indirect
 	github.com/ulikunitz/xz v0.5.4 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
-	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
+	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
-	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
-	gopkg.in/alecthomas/kingpin.v2 v2.2.6 // indirect
-	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
 )

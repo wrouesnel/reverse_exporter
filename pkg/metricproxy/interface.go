@@ -2,8 +2,10 @@ package metricproxy
 
 import (
 	"context"
-	"errors"
+	"fmt"
+	"github.com/pkg/errors"
 	"github.com/wrouesnel/reverse_exporter/pkg/config"
+	"github.com/wrouesnel/reverse_exporter/pkg/middleware/auth"
 	"go.uber.org/zap"
 	"net/url"
 
@@ -11,7 +13,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/abbot/go-http-auth"
 	dto "github.com/prometheus/client_model/go"
 )
 
@@ -30,12 +31,12 @@ type MetricProxy interface {
 }
 
 // NewMetricReverseProxy initializes a new reverse proxy from the given configuration.
-func NewMetricReverseProxy(exporter *config.ReverseExporterConfig) (http.Handler, error) {
-	log := zap.L().With(zap.String("path", exporter.Path))
+func NewMetricReverseProxy(reverseExporter *config.ReverseExporterConfig) (http.Handler, error) {
+	log := zap.L().With(zap.String("path", reverseExporter.Path))
 
 	// Initialize a basic reverse proxy
 	backend := &ReverseProxyEndpoint{
-		metricPath: exporter.Path,
+		metricPath: reverseExporter.Path,
 		backends:   make([]MetricProxy, 0),
 	}
 	backend.handler = backend.serveMetricsHTTP
@@ -43,50 +44,50 @@ func NewMetricReverseProxy(exporter *config.ReverseExporterConfig) (http.Handler
 	usedNames := make(map[string]struct{})
 
 	// Start adding backends
-	for _, exporter := range exporter.Exporters {
+	for _, exporter := range reverseExporter.Exporters.All() {
 		var newExporter MetricProxy
 
 		baseExporter := exporter.(config.BaseExporter).GetBaseExporter()
-		log := log.With("name", baseExporter.Name) // nolint: vetshadow
+		eLog := log.With(zap.String("name", baseExporter.Name)) // nolint: vetshadow
 
 		switch e := exporter.(type) {
 		case config.FileExporterConfig:
-			log.Debugln("Adding new file exporter proxy")
+			eLog.Debug("Adding new file reverseExporter proxy")
 			newExporter = newFileProxy(&e)
 		case config.ExecExporterConfig:
-			log.Debugln("Adding new exec exporter proxy")
+			eLog.Debug("Adding new exec reverseExporter proxy")
 			newExporter = newExecProxy(&e)
 		case config.ExecCachingExporterConfig:
-			log.Debugln("Adding new caching exec exporter proxy")
+			eLog.Debug("Adding new caching exec reverseExporter proxy")
 			newExporter = newExecCachingProxy(&e)
 		case config.HTTPExporterConfig:
-			log.Debugln("Adding new http exporter proxy")
+			eLog.Debug("Adding new http reverseExporter proxy")
 			newExporter = &netProxy{
 				address:            e.Address,
 				deadline:           time.Duration(e.Timeout),
 				forwardQueryParams: e.ForwardURLParams,
 			}
 		default:
-			log.Errorf("Unknown proxy configuration item found: %T", e)
+			eLog.Error("Unknown proxy configuration item found", zap.String("type", fmt.Sprintf("%T", e)))
 			return nil, ErrUnknownExporterType
 		}
 
-		// Got exporter, now add a rewrite proxy in front of it
+		// Got reverseExporter, now add a rewrite proxy in front of it
 		labels := make(model.LabelSet)
 
-		// Keep track of exporter name use to pre-empt collisions
+		// Keep track of reverseExporter name use to pre-empt collisions
 		if _, found := usedNames[baseExporter.Name]; !found {
 			usedNames[baseExporter.Name] = struct{}{}
 		} else {
-			log.Errorln("Exporter name re-use even if rewrite is disabled is not allowed")
+			eLog.Error("Exporter name re-use even if rewrite is disabled is not allowed")
 			return nil, ErrExporterNameUsedTwice
 		}
 
-		// If not rewriting, log it.
+		// If not rewriting, eLog it.
 		if !baseExporter.NoRewrite {
 			labels[reverseProxyNameLabel] = model.LabelValue(baseExporter.Name)
 		} else {
-			log.Debugln("Disabled explicit exporter name for", baseExporter.Name)
+			eLog.Debug("Disabled explicit reverseExporter name")
 		}
 
 		// Set the additional labels.
@@ -107,24 +108,11 @@ func NewMetricReverseProxy(exporter *config.ReverseExporterConfig) (http.Handler
 		backend.backends = append(backend.backends, rewriteProxy)
 	}
 
-	// Process the auth configuration
-	switch exporter.AuthType {
-	case config.AuthTypeNone:
-		log.Debugln("No authentication for endpoint")
-	case config.AuthTypeBasic:
-		log.Debugln("Adding basic auth to endpoint")
-
-		provider := auth.HtpasswdFileProvider(exporter.HtPasswdFile)
-		authenticator := auth.NewBasicAuthenticator(authRealm, provider)
-
-		realHandler := backend.handler
-		authHandler := func(w http.ResponseWriter, r *auth.AuthenticatedRequest) {
-			realHandler(w, &r.Request)
-		}
-		backend.handler = authenticator.Wrap(authHandler)
-
-	default:
-		log.Errorln("Unknown auth-type specified:", exporter.AuthType)
+	var err error
+	backend.handler, err = auth.SetupAuthHandler(reverseExporter.Auth, backend.handler)
+	if err != nil {
+		return backend, errors.Wrapf(err, "failed configuring reverseExporter auth: %s",
+			reverseExporter.Path)
 	}
 
 	return backend, nil

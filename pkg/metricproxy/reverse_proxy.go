@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	dto "github.com/prometheus/client_model/go"
-	"github.com/prometheus/common/log"
+	"go.uber.org/zap"
 )
 
 // ReverseProxyEndpoint wraps a collection of ReverseProxyBackends. It exposes an HTTP endpoint
@@ -28,6 +28,7 @@ func (rpe *ReverseProxyEndpoint) ServeHTTP(wr http.ResponseWriter, req *http.Req
 // Prometheus endpoints contained underneath it. This function is the direct handler -
 // ServeHTTP on the interface varies based on the other wrappers used to construct it.
 func (rpe *ReverseProxyEndpoint) serveMetricsHTTP(wr http.ResponseWriter, req *http.Request) {
+	log := zap.L()
 	ctx := req.Context()
 
 	// As an appliance, we return nothing till we know the result of our reverse
@@ -39,14 +40,14 @@ func (rpe *ReverseProxyEndpoint) serveMetricsHTTP(wr http.ResponseWriter, req *h
 	mfsResultCh := make(chan []*dto.MetricFamily)
 
 	// On request, request all included exporters to return values.
-	log.Debugln("Scraping", len(rpe.backends), "exporters")
+	log.Debug("Scraping", zap.Int("num_exporters", len(rpe.backends)))
 	for _, backend := range rpe.backends {
 		wg.Add(1)
 		go func(mfsCh chan<- []*dto.MetricFamily, backend MetricProxy) {
 			defer wg.Done()
 			mfs, err := backend.Scrape(ctx, req.URL.Query())
 			if err != nil {
-				log.With("error", err).Errorln("Error while scraping backend handler for endpoint")
+				log.Error("Error while scraping backend handler for endpoint", zap.Error(err))
 				// TODO: emit a "scrape failed" metric of some sort
 				return
 			}
@@ -66,7 +67,7 @@ func (rpe *ReverseProxyEndpoint) serveMetricsHTTP(wr http.ResponseWriter, req *h
 	}(mfsResultCh)
 
 	// Wait for all scrapers to return and results to aggregate
-	log.Debugln("Waiting for scrapers to return")
+	log.Debug("Waiting for scrapers to return")
 	wg.Wait()
 	close(mfsCh)
 	// collect results from mfsResultCh
