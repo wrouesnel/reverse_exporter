@@ -1,9 +1,13 @@
 package metricproxy
 
 import (
-	"github.com/wrouesnel/reverse_exporter/pkg/promutil"
 	"io"
 	"sort"
+
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
+	"github.com/wrouesnel/reverse_exporter/pkg/promutil"
 
 	"bytes"
 	"compress/gzip"
@@ -25,14 +29,14 @@ func decodeMetrics(reader io.Reader, format expfmt.Format) ([]*dto.MetricFamily,
 	mfDec := expfmt.NewDecoder(reader, format)
 
 	for {
-		mf := &dto.MetricFamily{}
-		if err := mfDec.Decode(mf); err != nil {
-			if err != io.EOF {
+		metricFamily := &dto.MetricFamily{}
+		if err := mfDec.Decode(metricFamily); err != nil {
+			if errors.Is(err, io.EOF) {
 				merr = err
 			}
 			break
 		}
-		mfs = append(mfs, mf)
+		mfs = append(mfs, metricFamily)
 	}
 
 	return mfs, merr
@@ -43,11 +47,10 @@ func rewriteMetrics(labels model.LabelSet, mfs []*dto.MetricFamily) {
 	// Loop through all metric families
 	for _, mf := range mfs {
 		// Loop through all metrics
-		for _, m := range mf.Metric {
-			// TODO: Can this be faster?
+		for _, metric := range mf.Metric {
 			// Convert the LabelPairs back to a LabelSet
-			sourceSet := make(model.LabelSet, len(m.Label))
-			for _, lp := range m.Label {
+			sourceSet := make(model.LabelSet, len(metric.Label))
+			for _, lp := range metric.Label {
 				if lp.Name != nil {
 					sourceSet[model.LabelName(*lp.Name)] = model.LabelValue(lp.GetValue())
 				}
@@ -68,12 +71,12 @@ func rewriteMetrics(labels model.LabelSet, mfs []*dto.MetricFamily) {
 			}
 			sort.Sort(promutil.LabelPairSorter(outputPairs))
 			// Replace the metrics labels with the given output pairs
-			m.Label = outputPairs
+			metric.Label = outputPairs
 		}
 	}
 }
 
-// handleSerializeMetrics writes the samples as metrics to the given http.ResponseWriter
+// handleSerializeMetrics writes the samples as metrics to the given http.ResponseWriter.
 func handleSerializeMetrics(w http.ResponseWriter, req *http.Request, mfs []*dto.MetricFamily) {
 	contentType := expfmt.Negotiate(req.Header)
 	buf := getBuf()
@@ -89,7 +92,7 @@ func handleSerializeMetrics(w http.ResponseWriter, req *http.Request, mfs []*dto
 		}
 	}
 	if closer, ok := writer.(io.Closer); ok {
-		closer.Close() // nolint: errcheck,gas
+		closer.Close()
 	}
 	if lastErr != nil && buf.Len() == 0 {
 		http.Error(w, "No metrics encoded, last error:\n\n"+lastErr.Error(), http.StatusInternalServerError)
@@ -101,7 +104,9 @@ func handleSerializeMetrics(w http.ResponseWriter, req *http.Request, mfs []*dto
 	if encoding != "" {
 		header.Set(contentEncodingHeader, encoding)
 	}
-	w.Write(buf.Bytes()) // nolint: errcheck
+	if _, err := w.Write(buf.Bytes()); err != nil {
+		zap.L().Debug("Error writing to requestor", zap.Error(err))
+	}
 }
 
 // decorateWriter wraps a writer to handle gzip compression if requested.  It
@@ -124,7 +129,11 @@ func getBuf() *bytes.Buffer {
 	if buf == nil {
 		return &bytes.Buffer{}
 	}
-	return buf.(*bytes.Buffer)
+	ret, ok := buf.(*bytes.Buffer)
+	if !ok {
+		panic("BUG: did not get *bytes.Buffer from buf")
+	}
+	return ret
 }
 
 func giveBuf(buf *bytes.Buffer) {

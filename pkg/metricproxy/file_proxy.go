@@ -2,10 +2,11 @@ package metricproxy
 
 import (
 	"context"
-	"github.com/wrouesnel/reverse_exporter/pkg/config"
-	"go.uber.org/zap"
 	"net/url"
 	"os"
+
+	"github.com/wrouesnel/reverse_exporter/pkg/config"
+	"go.uber.org/zap"
 
 	"github.com/hashicorp/errwrap"
 	"github.com/moby/moby/pkg/ioutils"
@@ -13,7 +14,7 @@ import (
 	"github.com/prometheus/common/expfmt"
 )
 
-// ensure fileProxy implements MetricProxy
+// ensure fileProxy implements MetricProxy.
 var _ MetricProxy = &fileProxy{}
 
 // fileProxy implements a reverse metric proxy which simply reads a file
@@ -35,20 +36,20 @@ func newFileProxy(config *config.FileExporterConfig) *fileProxy {
 func (fp *fileProxy) Scrape(ctx context.Context, values url.Values) ([]*dto.MetricFamily, error) {
 	retMetrics := make([]*dto.MetricFamily, 0)
 
-	metricFile, ferr := os.OpenFile(fp.filePath, os.O_RDONLY, os.FileMode(0777))
+	metricFile, ferr := os.Open(fp.filePath)
 	if ferr != nil {
 		return retMetrics, errwrap.Wrap(ErrFileProxyScrapeError, ferr)
 	}
 
 	// Ensure weird file behavior doesn't leave multiple open processes
-	rc := ioutils.NewCancelReadCloser(ctx, metricFile)
+	readCloser := ioutils.NewCancelReadCloser(ctx, metricFile)
 	defer func() {
-		if err := rc.Close(); err != nil {
+		if err := readCloser.Close(); err != nil {
 			fp.log.Error("Error closing file", zap.Error(err))
 		}
 	}()
 
-	mfs, derr := decodeMetrics(rc, expfmt.FmtText)
+	mfs, derr := decodeMetrics(readCloser, expfmt.FmtText)
 	if derr != nil {
 		return retMetrics, errwrap.Wrap(ErrFileProxyScrapeError, derr)
 	}

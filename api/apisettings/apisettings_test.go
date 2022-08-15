@@ -1,7 +1,9 @@
-package apisettings
+package apisettings_test
 
 import (
 	"testing"
+
+	"github.com/wrouesnel/reverse_exporter/api/apisettings"
 
 	. "gopkg.in/check.v1"
 )
@@ -14,7 +16,7 @@ type APISuite struct{}
 var _ = Suite(&APISuite{})
 
 func (s *APISuite) TestPathWrapping(c *C) {
-	settings := APISettings{
+	settings := apisettings.APISettings{
 		ContextPath: "/some/type/of/path",
 	}
 

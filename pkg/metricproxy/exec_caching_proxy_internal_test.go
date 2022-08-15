@@ -1,12 +1,14 @@
+//nolint:errcheck
 package metricproxy
 
 import (
 	"context"
 	"fmt"
-	"github.com/wrouesnel/reverse_exporter/pkg/config"
 	"io/ioutil"
 	"os"
 	"time"
+
+	"github.com/wrouesnel/reverse_exporter/pkg/config"
 
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/model"

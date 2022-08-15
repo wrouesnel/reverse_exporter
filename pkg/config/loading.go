@@ -1,12 +1,13 @@
 package config
 
 import (
+	"io/ioutil"
+	"reflect"
+
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
-	"io/ioutil"
-	"reflect"
 )
 
 var (
@@ -104,7 +105,7 @@ func LoadAndSanitizeConfig(configData []byte) (string, error) {
 }
 
 // Load loads a configuration file from the supplied bytes.
-//nolint:forcetypeassert,funlen,cyclop
+//nolint:forcetypeassert,cyclop
 func Load(configData []byte) (*Config, error) {
 	defaultMap := loadDefaultConfigMap()
 	configMap, err := loadConfigMap(configData)

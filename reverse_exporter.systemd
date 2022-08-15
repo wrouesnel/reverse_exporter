@@ -1,0 +1,17 @@
+[Unit]
+Description=Prometheus metric reverse proxy
+After=network.target
+
+StartLimitBurst=5
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/reverse_exporter --config-file /etc/reverse_exporter.yml
+
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

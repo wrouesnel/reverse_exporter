@@ -40,6 +40,7 @@ issues:
         - dupl
         - funlen
         - varnamelen
+        - unparam
     - path: magefile.go
       linters:
         - unparam
@@ -72,6 +73,7 @@ linters-settings:
       - v
       - c
       - ip
+      - wg
     # Optional list of variable declarations that should be ignored completely. (defaults to empty list)
     # Entries must be in one of the following forms (see below for examples):
     # - for variables, parameters, named return values, method receivers, or type parameters:
@@ -80,6 +82,7 @@ linters-settings:
     ignore-decls:
       - s string
       - w http.ResponseWriter
+      - wr http.ResponseWriter
       - r *http.Request
 
   tagliatelle:
@@ -116,3 +119,13 @@ linters-settings:
   gocritic:
     disabled-checks:
       - commentFormatting
+
+  funlen:
+    # Checks the number of lines in a function.
+    # If lower than 0, disable the check.
+    # Default: 60
+    lines: 90
+    # Checks the number of statements in a function.
+    # If lower than 0, disable the check.
+    # Default: 40
+    statements: 60

@@ -1,11 +1,13 @@
+//nolint:errcheck,testpackage,gochecknoglobals
 package metricproxy
 
 import (
 	"context"
 	"fmt"
-	"github.com/wrouesnel/reverse_exporter/pkg/config"
 	"io/ioutil"
 	"os"
+
+	"github.com/wrouesnel/reverse_exporter/pkg/config"
 
 	. "gopkg.in/check.v1"
 )
@@ -30,7 +32,7 @@ func (s *FileProxySuite) TestFileProxy(c *C) {
 
 	// Get the path to the test metrics
 	filename := tempMetrics.Name()
-	defer os.Remove(filename) // nolint: errcheck
+	defer os.Remove(filename)
 
 	// Setup the file.
 	tempMetrics.WriteString(testFileMetrics)

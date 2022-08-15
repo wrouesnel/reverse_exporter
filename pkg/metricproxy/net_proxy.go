@@ -3,11 +3,14 @@ package metricproxy
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
 	"net/http"
 	"net/url"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
+
+	"go.uber.org/zap"
 
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
@@ -21,16 +24,15 @@ const (
 	acceptEncodingHeader  = "Accept-Encoding"
 )
 
-const acceptHeader = `application/vnd.google.protobuf;proto=io.prometheus.client.MetricFamily;encoding=delimited;q=0.7,text/plain;version=0.0.4;q=0.3,*/*;q=0.1` // nolint: lll
+const acceptHeader = `application/vnd.google.protobuf;proto=io.prometheus.client.MetricFamily;encoding=delimited;q=0.7,text/plain;version=0.0.4;q=0.3,*/*;q=0.1`
 
 const reverseProxyNameLabel = "exporter_name"
-const authRealm = "Secured"
 
-var userAgentHeader = fmt.Sprintf("Prometheus Reverse Exporter/%s", version.Version)
+var userAgentHeader = fmt.Sprintf("Prometheus Reverse Exporter/%s", version.Version) //nolint:gochecknoglobals
 
-var bufPool sync.Pool
+var bufPool sync.Pool //nolint:gochecknoglobals
 
-// ensure netProxy implements MetricProxy
+// ensure netProxy implements MetricProxy.
 var _ MetricProxy = &netProxy{}
 
 type netProxy struct {
@@ -60,14 +62,13 @@ func (mrp *netProxy) Scrape(ctx context.Context, values url.Values) ([]*dto.Metr
 }
 
 // scrape decodes MetricFamily's from the wire format, and returns them ready to be proxied.
-func scrape(ctx context.Context, deadline time.Duration, address string, values url.Values) ([]*dto.MetricFamily, error) { // nolint: lll
+func scrape(ctx context.Context, deadline time.Duration, address string, values url.Values) ([]*dto.MetricFamily, error) {
 	req, err := http.NewRequest(http.MethodGet, address, nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "creating HTTP request failed")
 	}
 	req.Header.Add("Accept", acceptHeader)
 	req.Header.Set("User-Agent", userAgentHeader)
-	// TODO: pass through this value ?
 	//req.Header.Set("X-Prometheus-Scrape-Timeout-Seconds", fmt.Sprintf("%f", s.timeout.Seconds()))
 
 	// Replace query parameters only if specified
@@ -88,12 +89,12 @@ func scrape(ctx context.Context, deadline time.Duration, address string, values 
 
 	resp, err := http.DefaultClient.Do(req.WithContext(proxyCtx))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "http scrape failure")
 	}
-	defer resp.Body.Close() // nolint: errcheck
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("server returned HTTP status %s", resp.Status)
+		return nil, errors.Wrapf(ErrNetProxyScrapeError, "server returned HTTP status %s", resp.Status)
 	}
 
 	mfs, err := decodeMetrics(resp.Body, expfmt.ResponseFormat(resp.Header))

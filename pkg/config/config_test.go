@@ -1,11 +1,10 @@
 package config_test
 
 import (
-	"github.com/wrouesnel/reverse_exporter/pkg/config"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
-	"github.com/pmezard/go-difflib/difflib"
+	"github.com/wrouesnel/reverse_exporter/pkg/config"
+
 	. "gopkg.in/check.v1"
 )
 
@@ -16,17 +15,17 @@ type ConfigSuite struct{}
 
 var _ = Suite(&ConfigSuite{})
 
-func structDiff(a, b interface{}) string {
-	diff := difflib.UnifiedDiff{
-		A:        difflib.SplitLines(spew.Sdump(a)),
-		B:        difflib.SplitLines(spew.Sdump(b)),
-		FromFile: "a",
-		ToFile:   "b",
-		Context:  3,
-	}
-	text, _ := difflib.GetUnifiedDiffString(diff)
-	return text
-}
+//func structDiff(a, b interface{}) string {
+//	diff := difflib.UnifiedDiff{
+//		A:        difflib.SplitLines(spew.Sdump(a)),
+//		B:        difflib.SplitLines(spew.Sdump(b)),
+//		FromFile: "a",
+//		ToFile:   "b",
+//		Context:  3,
+//	}
+//	text, _ := difflib.GetUnifiedDiffString(diff)
+//	return text
+//}
 
 func (s *ConfigSuite) TestConfigParsing(c *C) {
 	cfg, err := config.LoadFromFile("test_data/test_config.yml")

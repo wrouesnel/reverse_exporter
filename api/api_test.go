@@ -1,7 +1,9 @@
-package api
+package api_test
 
 import (
 	"testing"
+
+	"github.com/wrouesnel/reverse_exporter/api"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/wrouesnel/reverse_exporter/api/apisettings"
@@ -21,7 +23,7 @@ func (s *APISuite) TestAPICreation(c *C) {
 	}
 
 	router := httprouter.New()
-	router = NewAPIv1(settings, router)
+	router = api.NewAPIv1(settings, router)
 
 	// Kind of a boring check, but important
 	c.Check(router, Not(IsNil))

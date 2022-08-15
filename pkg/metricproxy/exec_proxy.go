@@ -3,22 +3,23 @@ package metricproxy
 import (
 	"context"
 	"errors"
-	"github.com/wrouesnel/reverse_exporter/pkg/config"
-	"go.uber.org/zap"
 	"net/url"
 	"os/exec"
 	"sync"
 	"time"
 
+	"github.com/wrouesnel/reverse_exporter/pkg/config"
+	"go.uber.org/zap"
+
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 )
 
-// ensure fileProxy implements MetricProxy
+// ensure fileProxy implements MetricProxy.
 var _ MetricProxy = &execProxy{}
 
 var (
-	// ErrScrapeTimeoutBeforeExecFinished returned when a context times out before the exec exporter receives metrics
+	// ErrScrapeTimeoutBeforeExecFinished returned when a context times out before the exec exporter receives metrics.
 	ErrScrapeTimeoutBeforeExecFinished = errors.New("scrape timed out before exec finished")
 )
 
@@ -73,7 +74,7 @@ func newExecProxy(config *config.ExecExporterConfig) *execProxy {
 	return &newProxy
 }
 
-// doExec handles the actual application execution. ctx, when cancelled, cancel's all execution
+// doExec handles the actual application execution. ctx, when cancelled, cancel's all execution.
 func (ep *execProxy) doExec(ctx context.Context) *execProxyScrapeResult {
 	// allocate a new result struct now
 	result := &execProxyScrapeResult{
@@ -84,7 +85,7 @@ func (ep *execProxy) doExec(ctx context.Context) *execProxyScrapeResult {
 	ep.log.Debug("Executing metric script")
 	// Have at least 1 listener, start executing.
 
-	cmd := exec.Command(ep.commandPath, ep.arguments...) // nolint: gas
+	cmd := exec.Command(ep.commandPath, ep.arguments...) //nolint:gosec
 	outRdr, perr := cmd.StdoutPipe()
 	if perr != nil {
 		result.err = perr
@@ -120,7 +121,7 @@ func (ep *execProxy) doExec(ctx context.Context) *execProxyScrapeResult {
 	mfs, derr := decodeMetrics(outRdr, expfmt.FmtText)
 
 	// Wait for the process to exit.
-	werr := cmd.Wait()
+	werr := cmd.Wait() //nolint:ifshort
 	ep.log.Debug("Subprocess finished.")
 	close(finished) // Disable the watchdog above
 	if werr != nil {
@@ -202,7 +203,7 @@ func (ep *execProxy) execer() {
 	}
 }
 
-// newScrapeRequest adds a channel to the list of waiting channels
+// newScrapeRequest adds a channel to the list of waiting channels.
 func (ep *execProxy) newScrapeRequest() <-chan *execProxyScrapeResult {
 	// This forms part of a double mutex setup which allows old requests to drain.
 	// See execer for implementations (basically drainMtx is locked while old requests
@@ -225,9 +226,8 @@ func (ep *execProxy) newScrapeRequest() <-chan *execProxyScrapeResult {
 	return waitCh
 }
 
-// delScrapeRequest removes a request from the list of waiting channels
+// delScrapeRequest removes a request from the list of waiting channels.
 func (ep *execProxy) delScrapeRequest(waitCh <-chan *execProxyScrapeResult) {
-
 	ep.scrapeEventCond.L.Lock()
 
 	// Delete waiting scrape
@@ -289,7 +289,7 @@ func (ecp *execCachingProxy) execer(rdyCh chan<- struct{}) {
 		ecp.log.Debug("Executing metric script on timeout")
 
 		ecp.lastExec = time.Now()
-		cmd := exec.Command(ecp.commandPath, ecp.arguments...) // nolint: gas
+		cmd := exec.Command(ecp.commandPath, ecp.arguments...) //nolint:gosec
 		outRdr, perr := cmd.StdoutPipe()
 		if perr != nil {
 			ecp.log.Error("Error opening stdout pipe to metric script", zap.Error(perr))

@@ -2,15 +2,16 @@ package main
 
 import (
 	"context"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/samber/lo"
 	"github.com/wrouesnel/reverse_exporter/pkg/config"
 	"github.com/wrouesnel/reverse_exporter/pkg/metricproxy"
 	"github.com/wrouesnel/reverse_exporter/version"
 	"go.uber.org/zap/zapcore"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/wrouesnel/multihttp"
@@ -80,10 +81,10 @@ func cmdMain(args []string) int {
 		return 1
 	}
 
-	return realMain(appLog, ctx, cfg)
+	return realMain(ctx, appLog, cfg)
 }
 
-func realMain(l *zap.Logger, ctx context.Context, cfg *config.Config) int {
+func realMain(ctx context.Context, l *zap.Logger, cfg *config.Config) int {
 	if cfg == nil {
 		l.Error("No config specified - shutting down")
 		return 1
@@ -98,27 +99,27 @@ func realMain(l *zap.Logger, ctx context.Context, cfg *config.Config) int {
 
 	l.Debug("Begin initializing reverse proxy backends")
 	initializedPaths := make(map[string]http.Handler)
-	for _, rp := range cfg.ReverseExporters {
-		rl := l.With(zap.String("path", rp.Path))
-		if rp.Path == "" {
-			rl.Error("Blank exporter paths are not allowed.")
+	for _, reverseExporterConfig := range cfg.ReverseExporters {
+		reLog := l.With(zap.String("path", reverseExporterConfig.Path))
+		if reverseExporterConfig.Path == "" {
+			reLog.Error("Blank exporter paths are not allowed.")
 			return 1
 		}
 
-		if _, found := initializedPaths[rp.Path]; found {
-			rl.Error("Exporter paths must be unique. %s already exists.")
+		if _, found := initializedPaths[reverseExporterConfig.Path]; found {
+			reLog.Error("Exporter paths must be unique. %s already exists.")
 			return 1
 		}
 
-		proxyHandler, perr := metricproxy.NewMetricReverseProxy(rp)
+		proxyHandler, perr := metricproxy.NewMetricReverseProxy(reverseExporterConfig)
 		if perr != nil {
-			rl.Error("Error initializing reverse proxy for path")
+			reLog.Error("Error initializing reverse proxy for path")
 			return 1
 		}
 
-		router.Handler("GET", apiConfig.WrapPath(rp.Path), proxyHandler)
+		router.Handler("GET", apiConfig.WrapPath(reverseExporterConfig.Path), proxyHandler)
 
-		initializedPaths[rp.Path] = proxyHandler
+		initializedPaths[reverseExporterConfig.Path] = proxyHandler
 	}
 	l.Debug("Finished initializing reverse proxy backends")
 	l.Info("Initializsed backends")

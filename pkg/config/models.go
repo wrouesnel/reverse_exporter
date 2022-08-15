@@ -237,7 +237,7 @@ type TLSCertificatePool struct {
 }
 
 // MapStructureDecode implements the yaml.Unmarshaler interface for tls_cacerts.
-//nolint:funlen,cyclop
+//nolint:cyclop
 func (t *TLSCertificatePool) MapStructureDecode(input interface{}) error {
 	// Get the slice
 	interfaceSlice, ok := input.([]interface{})

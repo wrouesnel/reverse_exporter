@@ -48,7 +48,6 @@ func (rpe *ReverseProxyEndpoint) serveMetricsHTTP(wr http.ResponseWriter, req *h
 			mfs, err := backend.Scrape(ctx, req.URL.Query())
 			if err != nil {
 				log.Error("Error while scraping backend handler for endpoint", zap.Error(err))
-				// TODO: emit a "scrape failed" metric of some sort
 				return
 			}
 			mfsCh <- mfs
@@ -56,7 +55,6 @@ func (rpe *ReverseProxyEndpoint) serveMetricsHTTP(wr http.ResponseWriter, req *h
 	}
 	// metric aggregator combines all the scraped metrics and emits them to the
 	// result channel.
-	// TODO: find and emit a metric for metric name clashes here.
 	go func(chan<- []*dto.MetricFamily) {
 		mfs := []*dto.MetricFamily{}
 		for inpMfs := range mfsCh {

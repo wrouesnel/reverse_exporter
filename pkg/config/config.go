@@ -6,16 +6,12 @@ import (
 	"github.com/samber/lo"
 )
 
-// TODO: error if a user tries to override this with labels
-//const exporterNameLabel = "exporter_name"
-
-// nolint: golint
 var (
 	ErrInvalidExportersConfig = errors.New("exporters key is not in the known format")
 	ErrUnknownExporterType    = errors.New("unknown exporter type specified")
 )
 
-// Config is the main application configuration structure
+// Config is the main application configuration structure.
 type Config struct {
 	Web              *WebConfig               `mapstructure:"web,omitempty"`
 	ExporterDefaults *ExporterDefaults        `mapstructure:"exporter_defaults,omitempty"`
@@ -48,7 +44,7 @@ type WebConfig struct {
 	Listen            []URL          `mapstructure:"listen,omitempty"`
 }
 
-// ReverseExporterConfig is a configuration struct describing a logically-decoded proxied exporter
+// ReverseExporterConfig is a configuration struct describing a logically-decoded proxied exporter.
 type ReverseExporterConfig struct {
 	// Path is the URL path this set of exporters will be found under.
 	Path string `mapstructure:"path"`
@@ -66,7 +62,7 @@ type ExporterDefaults struct {
 	ExecCachedDefaults *ExecCachingExporterConfig `mapstructure:"exec_cached"`
 }
 
-// ExportersConfig is the internal mapping the exporter config representation
+// ExportersConfig is the internal mapping the exporter config representation.
 type ExportersConfig struct {
 	HTTPExporters       []*HTTPExporterConfig        `mapstructure:"http"`
 	FileExporters       []*FileExporterConfig        `mapstructure:"file"`
@@ -83,12 +79,12 @@ func (ex *ExportersConfig) All() []BaseExporter {
 	return exporters
 }
 
-// BaseExporter is the interface all exporters must implement
+// BaseExporter is the interface all exporters must implement.
 type BaseExporter interface {
 	GetBaseExporter() Exporter
 }
 
-// Exporter implements BaseExporter
+// Exporter implements BaseExporter.
 type Exporter struct {
 	// Name is the name of the underlying exporter which will be appended to the metrics
 	Name string `mapstructure:"name"`
@@ -98,26 +94,25 @@ type Exporter struct {
 	Labels map[string]string `mapstructure:"labels"`
 }
 
-// GetBaseExporter returns the common exporter parameters of an exporter
-// TODO: make correctly read-only
+// GetBaseExporter returns the common exporter parameters of an exporter.
 func (e Exporter) GetBaseExporter() Exporter {
 	return e
 }
 
-// FileExporterConfig contains configuration specific to reverse proxying files
+// FileExporterConfig contains configuration specific to reverse proxying files.
 type FileExporterConfig struct {
 	Exporter `mapstructure:",squash"`
 	Path     string `mapstructure:"path"`
 }
 
-// ExecExporterConfig contains configuration specific to reverse proxying executable scripts
+// ExecExporterConfig contains configuration specific to reverse proxying executable scripts.
 type ExecExporterConfig struct {
 	Exporter `mapstructure:",squash"`
 	Command  string   `mapstructure:"command"`
 	Args     []string `mapstructure:"args"`
 }
 
-// ExecCachingExporterConfig contains configuration specific to reverse proxying cached executable scripts
+// ExecCachingExporterConfig contains configuration specific to reverse proxying cached executable scripts.
 type ExecCachingExporterConfig struct {
 	Exporter     `mapstructure:",squash"`
 	Command      string         `mapstructure:"command"`
@@ -127,7 +122,7 @@ type ExecCachingExporterConfig struct {
 	//ExecExporterConfig `mapstructure:",inline"`
 }
 
-// HTTPExporterConfig contains configuration specific to reverse proxying normal http-based Prometheus exporters
+// HTTPExporterConfig contains configuration specific to reverse proxying normal http-based Prometheus exporters.
 type HTTPExporterConfig struct {
 	Exporter `mapstructure:",squash"`
 	// A URI giving the address the exporter is found at.

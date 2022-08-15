@@ -3,34 +3,37 @@ package metricproxy
 import (
 	"context"
 	"fmt"
+	"net/url"
+
 	"github.com/pkg/errors"
 	"github.com/wrouesnel/reverse_exporter/pkg/config"
 	"github.com/wrouesnel/reverse_exporter/pkg/middleware/auth"
 	"go.uber.org/zap"
-	"net/url"
 
-	"github.com/prometheus/common/model"
 	"net/http"
 	"time"
+
+	"github.com/prometheus/common/model"
 
 	dto "github.com/prometheus/client_model/go"
 )
 
-// nolint: golint
 var (
 	ErrNameFieldOverrideAttempted = errors.New("cannot override name field with additional labels")
 	ErrFileProxyScrapeError       = errors.New("file proxy file read failed")
+	ErrNetProxyScrapeError        = errors.New("HTTP proxy failed to read backend")
 	ErrUnknownExporterType        = errors.New("cannot configure unknown exporter type")
 	ErrExporterNameUsedTwice      = errors.New("cannot use the same exporter name twice for one endpoint")
 )
 
-// MetricProxy presents an interface which allows a context-cancellable scrape of a backend proxy
+// MetricProxy presents an interface which allows a context-cancellable scrape of a backend proxy.
 type MetricProxy interface {
 	// Scrape returns the metrics.
 	Scrape(ctx context.Context, values url.Values) ([]*dto.MetricFamily, error)
 }
 
 // NewMetricReverseProxy initializes a new reverse proxy from the given configuration.
+//nolint:cyclop
 func NewMetricReverseProxy(reverseExporter *config.ReverseExporterConfig) (http.Handler, error) {
 	log := zap.L().With(zap.String("path", reverseExporter.Path))
 
@@ -47,9 +50,10 @@ func NewMetricReverseProxy(reverseExporter *config.ReverseExporterConfig) (http.
 	for _, exporter := range reverseExporter.Exporters.All() {
 		var newExporter MetricProxy
 
-		baseExporter := exporter.(config.BaseExporter).GetBaseExporter()
-		eLog := log.With(zap.String("name", baseExporter.Name)) // nolint: vetshadow
+		baseExporter := exporter.GetBaseExporter()
+		eLog := log.With(zap.String("name", baseExporter.Name))
 
+		//nolint:varnamelen
 		switch e := exporter.(type) {
 		case config.FileExporterConfig:
 			eLog.Debug("Adding new file reverseExporter proxy")

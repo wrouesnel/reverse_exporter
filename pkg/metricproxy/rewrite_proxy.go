@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/pkg/errors"
+
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/model"
 )
@@ -26,7 +28,7 @@ func (rpb *rewriteProxy) Scrape(ctx context.Context, values url.Values) ([]*dto.
 	// Do the metric scrape
 	mfs, err := rpb.proxy.Scrape(childCtx, values)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "underlying metric proxy scrape error")
 	}
 	// Rewrite the metric set before returning it.
 	rewriteMetrics(rpb.labels, mfs)
