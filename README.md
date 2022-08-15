@@ -8,6 +8,20 @@ r)
 
 Logical-decoding Promethus Metric Reverse Proxy
 
+# Getting Started
+
+A prebuilt docker container is hosted on Github Packages:
+
+```bash
+docker run -it -p 9998:9998 -v /reverse_exporter.yml:/config/reverse_exporter.yml ghcr.io/wrouesnel/reverse_exporter
+```
+
+Or you can build your own:
+```bash
+docker build -t reverse_exporter .
+docker run -p 9998:9998 -v /myconfig.yml:/config/reverse_exporter.yml
+```
+
 ## Purpose
 
 This exporter is designed for appliance-like container environments where multiple Prometheus
@@ -19,6 +33,12 @@ to each metric so name-colliding metrics from internal exporters can be differen
 exporters export their own process information as a part of their metrics).
 
 tl;dr It's how you get `/metrics` to work with a fat container.
+
+## Usage
+
+```bash
+
+```
 
 # Notable Functionality
 
