@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/wrouesnel/reverse_exporter/pkg/config"
 
 	dto "github.com/prometheus/client_model/go"
@@ -29,6 +31,12 @@ type ExecCachingProxySuite struct {
 }
 
 var _ = Suite(&ExecCachingProxySuite{})
+
+func (s *ExecCachingProxySuite) SetUpSuite(c *C) {
+	l, err := zap.NewDevelopment()
+	c.Assert(err, IsNil)
+	zap.ReplaceGlobals(l)
+}
 
 // initProxyScript sets up a dummy exec proxy config from a variable for us.
 func (s *ExecCachingProxySuite) initProxyScript(c *C, script string) config.ExecCachingExporterConfig {

@@ -31,7 +31,7 @@ func decodeMetrics(reader io.Reader, format expfmt.Format) ([]*dto.MetricFamily,
 	for {
 		metricFamily := &dto.MetricFamily{}
 		if err := mfDec.Decode(metricFamily); err != nil {
-			if errors.Is(err, io.EOF) {
+			if !errors.Is(err, io.EOF) {
 				merr = err
 			}
 			break
