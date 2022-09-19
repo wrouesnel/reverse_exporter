@@ -7,7 +7,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0
 	github.com/integralist/go-findroot v0.0.0-20160518114804-ac90681525dc
 	github.com/julienschmidt/httprouter v1.3.0
-	github.com/magefile/mage v1.13.0
+	github.com/magefile/mage v1.14.0
 	github.com/mholt/archiver v3.1.1+incompatible
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/moby/moby v20.10.17+incompatible
@@ -30,7 +30,6 @@ require (
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
-	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/nwaples/rardecode v1.1.3 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/rogpeppe/go-internal v1.8.1 // indirect
