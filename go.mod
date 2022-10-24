@@ -12,7 +12,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/moby/moby v20.10.18+incompatible
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_model v0.2.0
+	github.com/prometheus/client_model v0.3.0
 	github.com/prometheus/common v0.37.0
 	github.com/samber/lo v1.28.2
 	github.com/shaj13/go-guardian/v2 v2.11.5
