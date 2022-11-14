@@ -14,7 +14,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.37.0
-	github.com/samber/lo v1.28.2
+	github.com/samber/lo v1.34.0
 	github.com/shaj13/go-guardian/v2 v2.11.5
 	github.com/wrouesnel/multihttp v1.0.0
 	go.uber.org/zap v1.23.0
