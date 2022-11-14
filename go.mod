@@ -3,7 +3,7 @@ module github.com/wrouesnel/reverse_exporter
 go 1.18
 
 require (
-	github.com/alecthomas/kong v0.6.1
+	github.com/alecthomas/kong v0.7.1
 	github.com/hashicorp/errwrap v1.1.0
 	github.com/integralist/go-findroot v0.0.0-20160518114804-ac90681525dc
 	github.com/julienschmidt/httprouter v1.3.0
